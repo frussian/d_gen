@@ -13,38 +13,17 @@ shape       : CIRCLE | SQUARE;
 color       : BLACK | BLUE | BROWN | GREEN | RED | ORANGE | PURPLE | YELLOW | WHITE ;
 position    : x=(LEFT | CENTER | RIGHT) ',' y=(TOP | CENTER | BOTTOM) ;
 
-DRAW        : 'draw' ;
-WRITE       : 'write' ;
-IN          : 'in' ;
-AT          : 'at';
+type         : (types += SCALAR_TYPE types += NESTED_TYPE* );
 
-CIRCLE      : 'circle' ;
-SQUARE      : 'square' ;
+//types
+NESTED_TYPE  : '[]' ;
+SCALAR_TYPE  : 'int' | 'string' | 'char' ;
 
-SMALL       : 'small' ;
-MEDIUM      : 'medium' ;
-BIG         : 'big' ;
+STRING       : '"' .*? '"' ;
 
-LEFT        : 'left' ;
-RIGHT       : 'right' ;
-CENTER      : 'center' ;
-TOP         : 'top' ;
-BOTTOM      : 'bottom' ;
+IDENT        : [a-zA-Z][a-zA-Z0-9\-_]* ;
+NUM          : [1-9][0-9]* ;
+CHAR         : '\'' (. | '\\n' | '\\t') '\'' ;
 
-STRING      : '"' .*? '"' ;
-
-BLACK       : 'black' ;
-BLUE        : 'blue' ;
-BROWN       : 'brown' ;
-GREEN       : 'green' ;
-RED         : 'red' ;
-ORANGE      : 'orange' ;
-PURPLE      : 'purple' ;
-YELLOW      : 'yellow' ;
-WHITE       : 'white' ;
-
-NAME        :  [a-zA-Z0-9\-_]+;
-
-NEWLINE     : ('\r'? '\n' | '\r')+ ;
-TAB         : ('\t' | '        ' | '    ' ) ;
-WHITESPACE  : ' ' -> skip ;
+NEWLINE      : ('\r'? '\n' | '\r')+ ;
+WHITESPACE   : [ \t] -> skip ;

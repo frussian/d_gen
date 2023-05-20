@@ -33,31 +33,31 @@ target_sources(d_gen PRIVATE ${ANTLR_Dgen_CXX_OUTPUTS})
 #ANTLR
 
 #Z3
-find_package(Z3 REQUIRED CONFIG)
-message(STATUS "Z3_FOUND: ${Z3_FOUND}")
-message(STATUS "Found Z3 ${Z3_VERSION_STRING}")
-message(STATUS "Z3_DIR: ${Z3_DIR}")
-
-target_include_directories(d_gen PRIVATE ${Z3_CXX_INCLUDE_DIRS})
-target_link_libraries(d_gen PRIVATE ${Z3_LIBRARIES})
-
-target_compile_options(d_gen PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
-
-if (CMAKE_SYSTEM_NAME MATCHES "[Ww]indows")
-	# On Windows we need to copy the Z3 libraries
-	# into the same directory as the executable
-	# so that they can be found.
-	foreach (z3_lib ${Z3_LIBRARIES})
-		message(STATUS "Adding copy rule for ${z3_lib}")
-		add_custom_command(TARGET d_gen
-				POST_BUILD
-				COMMAND
-				${CMAKE_COMMAND} -E copy_if_different
-				$<TARGET_FILE:${z3_lib}>
-				$<TARGET_FILE_DIR:d_gen>
-				)
-	endforeach()
-endif()
+#find_package(Z3 REQUIRED CONFIG)
+#message(STATUS "Z3_FOUND: ${Z3_FOUND}")
+#message(STATUS "Found Z3 ${Z3_VERSION_STRING}")
+#message(STATUS "Z3_DIR: ${Z3_DIR}")
+#
+#target_include_directories(d_gen PRIVATE ${Z3_CXX_INCLUDE_DIRS})
+#target_link_libraries(d_gen PRIVATE ${Z3_LIBRARIES})
+#
+#target_compile_options(d_gen PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
+#
+#if (CMAKE_SYSTEM_NAME MATCHES "[Ww]indows")
+#	# On Windows we need to copy the Z3 libraries
+#	# into the same directory as the executable
+#	# so that they can be found.
+#	foreach (z3_lib ${Z3_LIBRARIES})
+#		message(STATUS "Adding copy rule for ${z3_lib}")
+#		add_custom_command(TARGET d_gen
+#				POST_BUILD
+#				COMMAND
+#				${CMAKE_COMMAND} -E copy_if_different
+#				$<TARGET_FILE:${z3_lib}>
+#				$<TARGET_FILE_DIR:d_gen>
+#				)
+#	endforeach()
+#endif()
 #Z3
 
 #LLVM

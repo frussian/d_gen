@@ -7,14 +7,18 @@
 #include "type.h"
 
 #include "ASTBuilderVisitor.h"
+#include "Semantics.h"
 
 void antlr_test() {
 	std::ifstream stream;
-	stream.open("examples/prefix_func.dg");
+	stream.open("examples/asg.dg");
 	if (stream.fail()) {
 		throw "can't read file";
 	}
 	auto builder = std::make_unique<ASTBuilderVisitor>(stream);
 	auto func = builder->parse();
+	func->print(std::cout, 0);
+	//TODO: check break and continue => type-checking => eliminate unreachable code
+	Semantics::eliminate_unreachable_code(func);
 	func->print(std::cout, 0);
 }

@@ -88,6 +88,8 @@ private:
 
 	std::any visitArray_create(d_genParser::Array_createContext *ctx) override;
 
+	std::any visitUnary_minus(d_genParser::Unary_minusContext *ctx) override;
+
 	std::any visitProperty_lookup(d_genParser::Property_lookupContext *ctx) override;
 
 	std::any visitType(d_genParser::TypeContext *ctx) override;

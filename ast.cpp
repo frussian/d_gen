@@ -237,6 +237,55 @@ BinOpNode* BinOpNode::create(Position pos, std::string op_type, ASTNode *lhs, AS
 	return new BinOpNode(pos, map_op_type(op_type), lhs, rhs);
 }
 
+void BinOpNode::print(std::ostream &out, int offset) {
+	print_spaces(out, offset);
+	out << "BinOpNode:" << std::endl;
+	lhs->print(out, offset + OFFSET);
+	print_spaces(out, offset + OFFSET);
+	std::string op_str;
+	switch (op_type) {
+		case BinOpType::SUM:
+			op_str = "+";
+			break;
+		case BinOpType::SUB:
+			op_str = "-";
+			break;
+		case BinOpType::OR:
+			op_str = "||";
+			break;
+		case BinOpType::LT:
+			op_str = "<";
+			break;
+		case BinOpType::LE:
+			op_str = "<=";
+			break;
+		case BinOpType::GT:
+			op_str = ">";
+			break;
+		case BinOpType::GE:
+			op_str = ">=";
+			break;
+		case BinOpType::EQ:
+			op_str = "==";
+			break;
+		case BinOpType::NEQ:
+			op_str = "!=";
+			break;
+		case BinOpType::MUL:
+			op_str = "*";
+			break;
+		case BinOpType::DIV:
+			op_str = "/";
+			break;
+		case BinOpType::AND:
+			op_str = "&&";
+			break;
+	}
+	out << op_str << std::endl;
+
+	rhs->print(out, offset + OFFSET);
+}
+
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, ASTNode *index):
 	ASTNode(pos), index(index) {
 	ident = new IdentNode(pos, std::move(ident_name));

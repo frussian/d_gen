@@ -294,3 +294,10 @@ std::any ASTBuilderVisitor::visitConst(d_genParser::ConstContext *ctx) {
 	//TODO: replace
 	return constNode;
 }
+
+std::any ASTBuilderVisitor::visitUnary_minus(d_genParser::Unary_minusContext *ctx) {
+	auto f = std::any_cast<ASTNode*>(ctx->f()->accept(this));
+	return static_cast<ASTNode*>(
+			new BinOpNode(getStartPos(ctx), BinOpType::MUL, new NumberNode(getStartPos(ctx), -1), f)
+		);
+}

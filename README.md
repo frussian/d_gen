@@ -15,6 +15,8 @@ make -j4
 #### LLVM
 [Install LLVM-13](https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
 
+#### ANTLR4
+Downloaded and built at the build time
 ## Semantics
 
 ### Types

@@ -199,6 +199,7 @@ public:
 	BinOpType op_type;
 	explicit BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs);
 	static BinOpNode *create(Position pos, std::string op_type, ASTNode *lhs, ASTNode *rhs);
+	void print(std::ostream &out, int offset);
 private:
 	static BinOpType map_op_type(const std::string& op_type);
 };

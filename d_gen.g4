@@ -34,7 +34,7 @@ cmp_op           : expr CMP_OP expr ;
 expr         : operands += t ( (ops += ('+' | '-')) operands += t )* ;
 t            : operands += f ( ops += ('*' | '/') operands += f)* ;
 f            : inner_expr | const | f_ident | array_lookup |
-               array_create | property_lookup ;
+               array_create | property_lookup | unary_minus ;
 
 inner_expr      : '(' expr ')' ;
 const           : CHAR | STRING | NUM | BOOL;
@@ -42,6 +42,7 @@ f_ident         : IDENT ;
 array_lookup    : IDENT '[' expr ']' ;
 array_create    : type '[' expr ']' ;
 property_lookup : IDENT '.' IDENT ;
+unary_minus     : '-' f ;
 
 type         : (types += SCALAR_TYPE types += NESTED_TYPE* );
 

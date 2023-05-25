@@ -23,10 +23,10 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
+#include "BuildError.h"
 #include <memory>
 
-namespace llvm {
-	namespace orc {
+namespace llvm::orc {
 
 		class KaleidoscopeJIT {
 		public:
@@ -92,16 +92,14 @@ namespace llvm {
 			}
 		};
 
-	} // end namespace orc
-} // end namespace llvm
+	} // end namespace llvm
 
 #endif // LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H
 
 
-using namespace llvm;
-using namespace llvm::orc;
+//using namespace llvm::orc;
 
-ExitOnError ExitOnErr;
+llvm::ExitOnError ExitOnErr;
 
 extern "C" void cb_fn() {
 	std::cout << "hello world!" << std::endl;
@@ -112,69 +110,79 @@ extern "C" double printd(double X) {
 	return 0;
 }
 
-ThreadSafeModule createDemoModule(ExecutionSession &ES, const DataLayout &DL) {
-	auto Context = std::make_unique<LLVMContext>();
-	auto M = std::make_unique<Module>("test", *Context);
+llvm::orc::ThreadSafeModule createDemoModule(llvm::orc::ExecutionSession &ES, const llvm::DataLayout &DL) {
+	auto Context = std::make_unique<llvm::LLVMContext>();
+	auto M = std::make_unique<llvm::Module>("test", *Context);
 	// Create the add1 function entry and insert this entry into module M.  The
 	// function will have a return type of "int" and take an argument of "int".
-	Function *Add1F =
-			Function::Create(FunctionType::get(Type::getInt32Ty(*Context),
-											   {Type::getInt32Ty(*Context)}, false),
-							 Function::ExternalLinkage, "add1", M.get());
+	llvm::Function *Add1F =
+			llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(*Context),
+											   {llvm::Type::getInt32Ty(*Context)}, false),
+								   llvm::Function::ExternalLinkage, "add1", M.get());
 
-	auto cb_t = FunctionType::get(Type::getVoidTy(*Context), false);
-	MangleAndInterner mng(ES, DL);
+	auto cb_t = llvm::FunctionType::get(llvm::Type::getVoidTy(*Context), false);
+	llvm::orc::MangleAndInterner mng(ES, DL);
 	auto cb = M->getOrInsertFunction(*mng("cb_fn"), cb_t);
 
 	// Add a basic block to the function. As before, it automatically inserts
 	// because of the last argument.
-	BasicBlock *BB = BasicBlock::Create(*Context, "EntryBlock", Add1F);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*Context, "EntryBlock", Add1F);
 	// Create a basic block builder with default parameters.  The builder will
 	// automatically append instructions to the basic block 'BB'.
-	IRBuilder<> builder(BB);
+	llvm::IRBuilder<> builder(BB);
 	// Get pointers to the constant `1'.
-	Value *One = builder.getInt32(1);
+	llvm::Value *One = builder.getInt32(1);
 	// Get pointers to the integer argument of the add1 function...
 	assert(Add1F->arg_begin() != Add1F->arg_end()); // Make sure there's an arg
-	Argument *ArgX = &*Add1F->arg_begin();          // Get the arg
+	llvm::Argument *ArgX = &*Add1F->arg_begin();          // Get the arg
 	ArgX->setName("AnArg"); // Give it a nice symbolic name for fun.
 
 	builder.CreateCall(cb);
 
 	// Create the add instruction, inserting it into the end of BB.
-	Value *Add = builder.CreateAdd(One, ArgX);
+	llvm::Value *Add = builder.CreateAdd(One, ArgX);
 	// Create the return instruction and add it to the basic block
 	builder.CreateRet(Add);
 
 	M->print(llvm::errs(), nullptr);
 
-	return ThreadSafeModule(std::move(M), std::move(Context));
+	return llvm::orc::ThreadSafeModule(std::move(M), std::move(Context));
 }
 
 void antlr_test();
 
 int main(int argc, char *argv[]) {
 	// Initialize LLVM.
-	InitializeNativeTarget();
-	InitializeNativeTargetAsmPrinter();
-	InitializeNativeTargetAsmParser();
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmPrinter();
+	llvm::InitializeNativeTargetAsmParser();
 
 //	cantFail(LLJITBuilder().create())->addIRModule());
 
 
-	auto J = cantFail(KaleidoscopeJIT::Create());
+	auto J = cantFail(llvm::orc::KaleidoscopeJIT::Create());
 	auto M = createDemoModule(*J->ES, J->getDataLayout());
 	cantFail(J->addModule(std::move(M)));
 	// Look up the JIT'd function, cast it to a function pointer, then call it.
 	auto Add1Addr = ExitOnErr(J->lookup("add1"));
 	auto Add1 = (int(*)(int))Add1Addr.getAddress();
 	int Result = Add1(42);
-	outs() << "add1(42) = " << Result << "\n";
+	llvm::outs() << "add1(42) = " << Result << "\n";
 
 	auto sinSymbol = ExitOnErr(J->lookup("printd"));
 	ExitOnErr(J->lookup("cb_fn"));
-	outs() << sinSymbol.getAddress() << "\n";
-	antlr_test();
+	llvm::outs() << sinSymbol.getAddress() << "\n";
+	try {
+		antlr_test();
+	} catch (const BuildError &err) {
+		std::cout << "errors" << std::endl;
+		for (const auto &e: err.errors) {
+			std::cout << e.msg << std::endl;
+		}
+	} catch (const std::exception &err) {
+		std::cout << "error" << std::endl;
+		std::cout << err.what() << std::endl;
+	}
 //	J->getExecutionSession().dump(outs());
 	return 0;
 }

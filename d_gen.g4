@@ -1,30 +1,47 @@
 grammar d_gen;
 
 program      : function NEWLINE* EOF ;
-function     : (precondition NEWLINE)? type IDENT '(' type IDENT (',' type IDENT)* ')' body;
+function     : (precondition NEWLINE)? ret_type = type f_name = IDENT
+	'(' arg_types += type args += IDENT (',' arg_types += type args += IDENT)* ')' body;
+
 body         : '{' NEWLINE (stmts += statement NEWLINE)* '}';
 statement    : assignment | return | break | continue |
                define | for | while | if ;
 
-assignment   : IDENT ('[' expr ']')? ASSG_TYPE expr | IDENT CREM_TYPE ;
-return       : 'return' expr ;
+assignment   : simple_asg | crem_asg ;
+simple_asg   : (f_ident | array_lookup) (ASSG | ASSG_TYPE) logic_expr ;
+crem_asg     : (f_ident | array_lookup) CREM_TYPE ;
+return       : 'return' logic_expr ;
 break        : 'break' ;
 continue     : 'continue' ;
-define       : type IDENT | type assignment ;
-for          : (precondition NEWLINE)? 'for' assignment? ';' expr? ';' assignment? body ;
-while        : (precondition NEWLINE)? 'while' expr body ;
-if           : (precondition NEWLINE)? 'if' expr body ('else' body)? ;
+define       : type IDENT (ASSG logic_expr)? ;
+for          : (precondition NEWLINE)? 'for' pre_asg = assignment? ';' logic_expr? ';' inc_asg = assignment? body ;
+while        : (precondition NEWLINE)? 'while' logic_expr body ;
+if           : (precondition NEWLINE)? 'if' logic_expr body ('else' body)? ;
 
-precondition : '[' expr ']' ;
+precondition : '[' logic_expr ']' ;
 
 //condition    : tl ( '||' tl )* ;
 //tl           : fl ( '&&' fl)* ;
 //fl           : '(' condition ')' | expr CMP_OP expr ;
 
-expr         : t ( ('+' | '-' | '||' | CMP_OP) t )* ;
-t            : factors += f ( ops += ('*' | '/' | '&&') factors += f)* ;
-f            : '(' expr ')' | CONST | IDENT | IDENT '[' expr ']' |
-               type '[' expr ']' /*array create*/ | IDENT '.' IDENT /*property*/ ;
+logic_expr       : operands += logic_t ( ops += '||' operands += logic_t)* ;
+logic_t          : operands += logic_f ( ops += '&&' operands += logic_f)* ;
+logic_f          : logic_inner_expr | cmp_op | expr ;
+logic_inner_expr : '(' logic_expr ')' ;
+cmp_op           : expr CMP_OP expr ;
+
+expr         : operands += t ( (ops += ('+' | '-')) operands += t )* ;
+t            : operands += f ( ops += ('*' | '/') operands += f)* ;
+f            : inner_expr | const | f_ident | array_lookup |
+               array_create | property_lookup ;
+
+inner_expr      : '(' expr ')' ;
+const           : CHAR | STRING | NUM | BOOL;
+f_ident         : IDENT ;
+array_lookup    : IDENT '[' expr ']' ;
+array_create    : type '[' expr ']' ;
+property_lookup : IDENT '.' IDENT ;
 
 type         : (types += SCALAR_TYPE types += NESTED_TYPE* );
 
@@ -32,12 +49,11 @@ type         : (types += SCALAR_TYPE types += NESTED_TYPE* );
 NESTED_TYPE  : '[]' ;
 SCALAR_TYPE  : 'int' | 'string' | 'char' | 'bool' ;
 
+ASSG         : '=' ;
 
-ASSG_TYPE    : '=' | '+=' | '-=' | '*=' | '/=' ;
+ASSG_TYPE    : '+=' | '-=' | '*=' | '/=' ;
 CREM_TYPE    : '++' | '--' ;
 CMP_OP       : '<' | '<=' | '>' | '>=' | '==' | '!=' ;
-
-CONST        : CHAR | STRING | NUM | BOOL ;
 
 IDENT        : [a-zA-Z][a-zA-Z0-9\-_]* ;
 CHAR         : '\'' (. | '\\n' | '\\t') '\'' ;

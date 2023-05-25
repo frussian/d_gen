@@ -1,0 +1,4 @@
+bool smpl_asg(int i) {
+	i = 1
+	return i == 2
+}

@@ -119,9 +119,8 @@ enum class AsgType {
 class AsgNode: public ASTNode {
 public:
 	ASTNode *lhs;
-	AsgType type;
 	ASTNode *rhs;
-	explicit AsgNode(Position pos, ASTNode *lhs, AsgType type, ASTNode *rhs);
+	explicit AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs);
 	static AsgNode *create(Position pos, ASTNode *lhs, const std::string &type, ASTNode *rhs);
 private:
 	static AsgType map_asg_type(const std::string &type);
@@ -134,12 +133,10 @@ enum class CremType {
 	DEC
 };
 
-class CremNode: public ASTNode {
+class BinOpNode;
+class CremNode {
 public:
-	ASTNode *lhs;
-	CremType type;
-	explicit CremNode(Position pos, ASTNode *lhs, CremType type);
-	static CremNode *create(Position pos, ASTNode *lhs, const std::string &type);
+	static AsgNode *create(Position pos, ASTNode *lhs, const std::string &type);
 private:
 	static CremType map_crem_type(const std::string &type);
 };

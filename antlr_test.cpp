@@ -7,7 +7,6 @@
 #include "type.h"
 
 #include "ASTBuilderVisitor.h"
-#include "BuildError.h"
 
 void antlr_test() {
 	std::ifstream stream;

@@ -103,20 +103,34 @@ void ReturnNode::print(std::ostream &out, int offset) {
 	expr->print(out, offset + OFFSET);
 }
 
-AsgNode::AsgNode(Position pos, ASTNode *lhs, AsgType type, ASTNode *rhs):
-		ASTNode(pos), lhs(lhs), type(type), rhs(rhs) {}
+AsgNode::AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs):
+		ASTNode(pos), lhs(lhs), rhs(rhs) {}
 
 void AsgNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
 	out << "AsgNode:" << std::endl;
 	lhs->print(out, offset + OFFSET);
-	print_spaces(out, offset+OFFSET);
-	out << "asg_type: " << (int)type << std::endl;
 	rhs->print(out, offset + OFFSET);
 }
 
 AsgNode *AsgNode::create(Position pos, ASTNode *lhs, const std::string &type, ASTNode *rhs) {
-	return new AsgNode(pos, lhs, map_asg_type(type), rhs);
+	auto t = map_asg_type(type);
+	switch (t) {
+		case AsgType::SUM:
+			rhs = new BinOpNode(pos, BinOpType::SUM, lhs, rhs);
+			break;
+		case AsgType::SUB:
+			rhs = new BinOpNode(pos, BinOpType::SUB, lhs, rhs);
+			break;
+		case AsgType::MUL:
+			rhs = new BinOpNode(pos, BinOpType::MUL, lhs, rhs);
+			break;
+		case AsgType::DIV:
+			rhs = new BinOpNode(pos, BinOpType::DIV, lhs, rhs);
+			break;
+		default: break;
+	}
+	return new AsgNode(pos, lhs, rhs);
 }
 
 AsgType AsgNode::map_asg_type(const std::string &type) {
@@ -135,11 +149,17 @@ AsgType AsgNode::map_asg_type(const std::string &type) {
 	ASSERT(false, "invalid asg type " + type);
 }
 
-CremNode::CremNode(Position pos, ASTNode *lhs, CremType type): ASTNode(pos),
-	lhs(lhs), type(type) {}
-
-CremNode *CremNode::create(Position pos, ASTNode *lhs, const std::string &type) {
-	return new CremNode(pos, lhs, map_crem_type(type));
+AsgNode *CremNode::create(Position pos, ASTNode *lhs, const std::string &type) {
+	BinOpNode *rhs = nullptr;
+	switch (map_crem_type(type)) {
+		case CremType::INC:
+			rhs = new BinOpNode(pos, BinOpType::SUM, lhs, new NumberNode(pos, 1));
+			break;
+		case CremType::DEC:
+			rhs = new BinOpNode(pos, BinOpType::SUB, lhs, new NumberNode(pos, 1));
+			break;
+	}
+	return new AsgNode(pos, lhs, rhs);
 }
 
 CremType CremNode::map_crem_type(const std::string &type) {

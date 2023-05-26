@@ -261,10 +261,15 @@ std::any ASTBuilderVisitor::visitF_ident(d_genParser::F_identContext *ctx) {
 
 std::any ASTBuilderVisitor::visitArray_lookup(d_genParser::Array_lookupContext *ctx) {
 //		std::cout << "visit arr lookup" << std::endl;
+	std::vector<ASTNode*> idxs;
+	idxs.reserve(ctx->expr().size());
+	for (const auto &expr: ctx->expr()) {
+		idxs.push_back(std::any_cast<ASTNode*>(visitExpr(expr)));
+	}
 	return static_cast<ASTNode*> (
 			new ArrLookupNode(getStartPos(ctx),
 							  ctx->IDENT()->getText(),
-							  std::any_cast<ASTNode*>(visitExpr(ctx->expr()))
+							  idxs
 			)
 	);
 }

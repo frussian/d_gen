@@ -39,7 +39,7 @@ f            : inner_expr | const | f_ident | array_lookup |
 inner_expr      : '(' expr ')' ;
 const           : CHAR | STRING | NUM | BOOL;
 f_ident         : IDENT ;
-array_lookup    : IDENT '[' expr ']' ;
+array_lookup    : IDENT ('[' expr ']')+ ;
 array_create    : type '[' expr ']' ;
 property_lookup : IDENT '.' IDENT ;
 unary_minus     : '-' f ;

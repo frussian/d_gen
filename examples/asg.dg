@@ -1,10 +1,10 @@
 bool smpl_asg(int i) {
 	i = 1-1
-	string str =  "at atr"
+	string str =  "at atr\n"
 	if i >= 0 {
 		int i = 2
 		i++
-		i = str.len
+		i = str[i][0]
 	}
 	return i == 2
 }

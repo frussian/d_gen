@@ -21,6 +21,9 @@ void ASTNode::print_spaces(std::ostream &out, int offset) {
 void ASTNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
 	out << "ASTNode" << std::endl;
+	for (const auto &child: children) {
+		child->print(out, offset + OFFSET);
+	}
 }
 
 void ASTNode::visitChildren(ASTTraverser cb, std::any ctx) {
@@ -307,11 +310,22 @@ void BinOpNode::print(std::ostream &out, int offset) {
 	rhs->print(out, offset + OFFSET);
 }
 
-ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, ASTNode *index):
-	ASTNode(pos), index(index) {
+ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode*> idxs):
+		ASTNode(pos), idxs(std::move(idxs)) {
 	ident = new IdentNode(pos, std::move(ident_name));
 	children.push_back(ident);
-	children.push_back(index);
+	for (const auto &idx: this->idxs) {
+		children.push_back(idx);
+	}
+}
+
+void ArrLookupNode::print(std::ostream &out, int offset) {
+	print_spaces(out, offset);
+	std::cout << "ArrLookup" << std::endl;
+	ident->print(out, offset + OFFSET);
+	for (const auto &idx: idxs) {
+		idx->print(out, offset + OFFSET);
+	}
 }
 
 ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):

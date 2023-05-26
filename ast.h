@@ -219,8 +219,10 @@ private:
 class ArrLookupNode: public ASTNode {
 public:
 	IdentNode *ident;
-	ASTNode *index;
-	explicit ArrLookupNode(Position pos, std::string ident_name, ASTNode *index);
+	std::vector<ASTNode*> idxs;
+	explicit ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode *> idxs);
+
+	void print(std::ostream &out, int offset) override;
 };
 
 class ArrCreateNode: public ASTNode {

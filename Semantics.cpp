@@ -89,3 +89,88 @@ bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
 	return true;
 }
 
+void Semantics::type_check() {
+	func->visitChildren(&type_check_visitor, func);
+}
+
+bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
+	auto func = std::any_cast<FunctionNode*>(ctx);
+	if (auto pre_cond = dynamic_cast<PrecondNode*>(node)) {
+		type_check_precondition(pre_cond);
+		return false;
+	} else if (auto ret = dynamic_cast<ReturnNode*>(node)) {
+		auto t = ret->expr->get_type();
+		if (t != func->ret_type) {
+			throw BuildError(Err{ret->pos, "ret type is different, expected " +
+				func->ret_type.to_string() + ", got " +
+				t.to_string()});
+		}
+		return false;
+	} else if (auto asg = dynamic_cast<AsgNode*>(node)) {
+		type_check_asg(asg);
+		return false;
+	} else if (auto def = dynamic_cast<DefNode*>(node)) {
+		if (!def->rhs) {
+			return false;
+		}
+		auto t = def->rhs->get_type();
+		if (def->type != t) {
+			throw BuildError(Err{def->pos, "define statement have different types declared and evaluated: " +
+										   def->type.to_string() + " and " +
+										   t.to_string()});
+		}
+		return false;
+	} else if (auto loop = dynamic_cast<ForNode*>(node)) {
+		if (loop->precond) {
+			type_check_precondition(loop->precond);
+		}
+		if (loop->pre_asg) {
+			type_check_asg(loop->pre_asg);
+		}
+		if (loop->inc_asg) {
+			type_check_asg(loop->inc_asg);
+		}
+		auto cond_t = loop->cond->get_type();
+		if (cond_t != TypeKind::BOOL) {
+			throw BuildError(Err{loop->pos,
+								 "loop stop condition must be evaluated to bool, got " +
+								 cond_t.to_string()});
+		}
+		loop->body->visitChildren(&type_check_visitor, func);
+		return false;
+	} else if (auto if_node = dynamic_cast<IfNode*>(node)) {
+		if (if_node->precond) {
+			type_check_precondition(if_node->precond);
+		}
+		auto cond_t = if_node->cond->get_type();
+		if (cond_t != TypeKind::BOOL) {
+			throw BuildError(Err{if_node->pos,
+								 "if operator condition must be evaluated to bool, got " +
+								 cond_t.to_string()});
+		}
+		if_node->body->visitChildren(&type_check_visitor, func);
+		if (if_node->else_body) {
+			if_node->else_body->visitChildren(&type_check_visitor, func);
+		}
+		return false;
+	}
+
+	return true;
+}
+
+void Semantics::type_check_precondition(PrecondNode *pre_cond) {
+	auto t = pre_cond->expr->get_type();
+	if (t != TypeKind::BOOL) {
+		throw BuildError(Err{pre_cond->pos, "precondition must be evaluated to bool"});
+	}
+}
+
+void Semantics::type_check_asg(AsgNode *asg) {
+	auto lhs_t = asg->lhs->get_type();
+	auto rhs_t = asg->rhs->get_type();
+	if (! (lhs_t == rhs_t || lhs_t.is_numerical() && rhs_t.is_numerical()) ) {
+		throw BuildError(Err{asg->pos, "assignment sides have different types: " +
+									   lhs_t.to_string() + " and " +
+									   rhs_t.to_string()});
+	}
+}

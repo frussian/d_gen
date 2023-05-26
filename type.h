@@ -24,10 +24,19 @@ public:
 	std::shared_ptr<std::vector<TypeKind>> types;
 	int pos = 0;
 	explicit Type(std::shared_ptr<std::vector<TypeKind>> types);
-	TypeKind getCurrentType();
+	Type(TypeKind type);
+	TypeKind getCurrentType() const;
 	Type dropType();
 	static Type create(std::vector<antlr4::Token*> &tokens);
 	std::string to_string();
+	bool operator==(const Type& rhs) const;
+	bool operator!=(const Type& rhs) const;
+	bool operator==(const TypeKind& rhs) const;
+	bool operator!=(const TypeKind& rhs) const;
+	bool is_numerical() const;
+	bool is_scalar() const;
+	int length() const;
+	static bool type_is_numerical(TypeKind kind);
 private:
 	static TypeKind map_type(const std::string &type);
 };

@@ -16,11 +16,15 @@ public:
 	void eliminate_unreachable_code();
 	void connect_loops();
 	void type_ast();
+	void type_check();
 private:
 	FunctionNode *func;
 	void eliminate_unreachable_code_visit_body(BodyNode *body);
 	void connect_loops_visit_body(BodyNode *body, ForNode *loop);
-	static bool type_visitor(ASTNode*, std::any &ctx);
+	static bool type_visitor(ASTNode *node, std::any &ctx);
+	static bool type_check_visitor(ASTNode *node, std::any &ctx);
+	static void type_check_precondition(PrecondNode *pre_cond);
+	static void type_check_asg(AsgNode *asg_node);
 };
 
 

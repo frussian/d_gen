@@ -3,13 +3,14 @@
 //
 
 #include <iterator>
+#include <utility>
 
 #include "type.h"
 #include "utils/assert.h"
 
-Type::Type(std::shared_ptr<std::vector<TypeKind>> types): types(types) {}
+Type::Type(std::shared_ptr<std::vector<TypeKind>> types): types(std::move(types)) {}
 
-TypeKind Type::getCurrentType() {
+TypeKind Type::getCurrentType() const {
 	if (pos >= types->size()) {
 		return TypeKind::INVALID;
 	}
@@ -17,6 +18,9 @@ TypeKind Type::getCurrentType() {
 }
 
 Type Type::dropType() {
+	if (*this == TypeKind::STRING) {
+		return TypeKind::CHAR;
+	}
 	auto dropped = *this;
 	dropped.pos++;
 	return dropped;
@@ -80,4 +84,53 @@ std::string Type::to_string() {
 	}
 
 	return str;
+}
+
+Type::Type(TypeKind type) {
+	std::vector<TypeKind> vec = {type};
+	types = std::make_shared<std::vector<TypeKind>>(std::move(vec));
+}
+
+bool Type::operator==(const Type &rhs) const {
+	if (length() != rhs.length()) {
+		return false;
+	}
+	for (int i = 0; i < types->size(); i++) {
+		if (types->at(i + pos) != rhs.types->at(i + rhs.pos)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Type::operator!=(const Type &rhs) const {
+	return !operator==(rhs);
+}
+
+bool Type::operator==(const TypeKind &rhs) const {
+	if (length() != 1) {
+		return false;
+	}
+
+	return getCurrentType() == rhs;
+}
+
+bool Type::operator!=(const TypeKind &rhs) const {
+	return !operator==(rhs);
+}
+
+bool Type::type_is_numerical(TypeKind kind) {
+	return kind == TypeKind::CHAR || kind == TypeKind::INT;
+}
+
+bool Type::is_numerical() const {
+	return is_scalar() && type_is_numerical(getCurrentType());
+}
+
+bool Type::is_scalar() const {
+	return length() == 1;
+}
+
+int Type::length() const {
+	return types->size() - pos;
 }

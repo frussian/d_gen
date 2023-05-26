@@ -18,10 +18,10 @@ void antlr_test() {
 	auto builder = std::make_unique<ASTBuilderVisitor>(stream);
 	auto func = builder->parse();
 	func->print(std::cout, 0);
-	//TODO: check break and continue => type-checking => eliminate unreachable code
 	Semantics sem(func);
 	sem.connect_loops();
 	sem.type_ast();
+	sem.type_check();
 	sem.eliminate_unreachable_code();
 //	func->print(std::cout, 0);
 }

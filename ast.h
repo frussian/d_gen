@@ -25,6 +25,7 @@ public:
 	void print_spaces(std::ostream &out, int offset);
 	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
+	virtual Type get_type();
 //	virtual llvm::Value *codegen(CodeGenContext *ctx) {return nullptr;};
 private:
 //	void visitChildren(ASTTraverser cb, std::any ctx, ASTNode *node);
@@ -71,12 +72,13 @@ public:
 	void print(std::ostream &out, int offset) override;
 };
 
+class AsgNode;
 class ForNode: public ASTNode {
 public:
 	PrecondNode *precond;
-	ASTNode *pre_asg;
+	AsgNode *pre_asg;
 	ASTNode *cond;
-	ASTNode *inc_asg;
+	AsgNode *inc_asg;
 	BodyNode *body;
 	explicit ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 					 ASTNode *inc_asg, BodyNode *body);
@@ -86,7 +88,6 @@ public:
 
 class DefNode: public ASTNode {
 public:
-	//TODO: make IdentNode*
 	std::string name;
 	Type type;
 	ASTNode *rhs;
@@ -157,12 +158,16 @@ public:
 	char ch;
 	explicit CharNode(Position pos, char ch);
 	static CharNode *create(Position pos, antlr4::tree::TerminalNode *token);
+
+	Type get_type() override;
 };
 
 class StringNode: public ASTNode {
 public:
 	std::string str;
 	explicit StringNode(Position pos, std::string str);
+
+	Type get_type() override;
 };
 
 class NumberNode: public ASTNode {
@@ -170,6 +175,8 @@ public:
 	int num;
 	explicit NumberNode(Position pos, int num);
 	static NumberNode *create(Position pos, antlr4::tree::TerminalNode *token);
+
+	Type get_type() override;
 };
 
 class BoolNode: public ASTNode {
@@ -177,6 +184,8 @@ public:
 	bool val;
 	explicit BoolNode(Position pos, bool val);
 	static BoolNode *create(Position pos, antlr4::tree::TerminalNode *token);
+
+	Type get_type() override;
 };
 
 class IdentNode: public ASTNode {
@@ -185,6 +194,8 @@ public:
 	//type
 	std::shared_ptr<Symbol> symbol;
 	explicit IdentNode(Position pos, std::string name);
+
+	Type get_type() override;
 };
 
 enum class BinOpType {
@@ -205,6 +216,12 @@ enum class BinOpType {
 	AND
 };
 
+enum class BinOpGroup {
+	NUM,
+	BOOL,
+	ANY
+};
+
 class BinOpNode: public ASTNode {
 public:
 	ASTNode *lhs, *rhs;
@@ -212,8 +229,12 @@ public:
 	explicit BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs);
 	static BinOpNode *create(Position pos, std::string op_type, ASTNode *lhs, ASTNode *rhs);
 	void print(std::ostream &out, int offset) override;
+	Type get_type() override;
 private:
 	static BinOpType map_op_type(const std::string& op_type);
+	static BinOpGroup get_op_group_args(BinOpType type);
+	static TypeKind get_op_group_res(BinOpType type);
+	static std::string map_op_type_to_str(BinOpType type);
 };
 
 class ArrLookupNode: public ASTNode {
@@ -223,6 +244,8 @@ public:
 	explicit ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode *> idxs);
 
 	void print(std::ostream &out, int offset) override;
+
+	Type get_type() override;
 };
 
 class ArrCreateNode: public ASTNode {
@@ -231,6 +254,8 @@ public:
 	ASTNode *len;
 	explicit ArrCreateNode(Position pos, Type type, ASTNode *len);
 	static ArrCreateNode *create(Position pos, Type type, ASTNode *len);
+
+	Type get_type() override;
 };
 
 class PropertyLookupNode: public ASTNode {
@@ -238,6 +263,8 @@ public:
 	IdentNode *ident;
 	std::string property_name;
 	explicit PropertyLookupNode(Position pos, std::string ident_name, std::string property_name);
+
+	Type get_type() override;
 };
 
 

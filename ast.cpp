@@ -6,6 +6,7 @@
 
 #include "ast.h"
 #include "utils/assert.h"
+#include "BuildError.h"
 
 #define OFFSET 4
 
@@ -33,6 +34,10 @@ void ASTNode::visitChildren(ASTTraverser cb, std::any ctx) {
 		bool traverse_children = cb(child, ctx);
 		if (traverse_children) child->visitChildren(cb, ctx);
 	}
+}
+
+Type ASTNode::get_type() {
+	return Type(TypeKind::INVALID);
 }
 
 FunctionNode::FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
@@ -81,7 +86,9 @@ void IfNode::print(std::ostream &out, int offset) {
 
 ForNode::ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 				 ASTNode *inc_asg, BodyNode *body):
-	ASTNode(pos, {precond, pre_asg, cond, inc_asg, body}), precond(precond), pre_asg(pre_asg), cond(cond), inc_asg(inc_asg),
+	ASTNode(pos, {precond, pre_asg, cond, inc_asg, body}), precond(precond),
+	pre_asg(static_cast<AsgNode*>(pre_asg)), cond(cond),
+	inc_asg(static_cast<AsgNode*>(inc_asg)),
 	body(body) {}
 
 void ForNode::print(std::ostream &out, int offset) {
@@ -202,13 +209,25 @@ CharNode *CharNode::create(Position pos, antlr4::tree::TerminalNode *token) {
 	return new CharNode(pos, ch);
 }
 
+Type CharNode::get_type() {
+	return TypeKind::CHAR;
+}
+
 StringNode::StringNode(Position pos, std::string str): ASTNode(pos), str(std::move(str)) {}
+
+Type StringNode::get_type() {
+	return TypeKind::STRING;
+}
 
 NumberNode::NumberNode(Position pos, int num): ASTNode(pos), num(num) {}
 
 NumberNode *NumberNode::create(Position pos, antlr4::tree::TerminalNode *token) {
 	int num = std::atoi(token->getText().c_str());
 	return new NumberNode(pos, num);
+}
+
+Type NumberNode::get_type() {
+	return TypeKind::INT;
 }
 
 BoolNode::BoolNode(Position pos, bool val): ASTNode(pos), val(val) {}
@@ -222,7 +241,15 @@ BoolNode *BoolNode::create(Position pos, antlr4::tree::TerminalNode *token) {
 	ASSERT(false, "invalid bool token " + token->getText());
 }
 
+Type BoolNode::get_type() {
+	return TypeKind::BOOL;
+}
+
 IdentNode::IdentNode(Position pos, std::string name): ASTNode(pos), name(std::move(name)) {}
+
+Type IdentNode::get_type() {
+	return symbol->type;
+}
 
 BinOpNode::BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs):
 	ASTNode(pos, {lhs, rhs}), lhs(lhs), rhs(rhs), op_type(op_type) {}
@@ -257,6 +284,26 @@ BinOpType BinOpNode::map_op_type(const std::string& op_type) {
 	ASSERT(false, "invalid bin op type " + op_type);
 }
 
+BinOpGroup BinOpNode::get_op_group_args(BinOpType type) {
+	switch (type) {
+		case BinOpType::SUM:
+		case BinOpType::SUB:
+		case BinOpType::LT:
+		case BinOpType::LE:
+		case BinOpType::GT:
+		case BinOpType::GE:
+		case BinOpType::MUL:
+		case BinOpType::DIV:
+			return BinOpGroup::NUM;
+		case BinOpType::OR:
+		case BinOpType::AND:
+			return BinOpGroup::BOOL;
+		case BinOpType::EQ:
+		case BinOpType::NEQ:
+			return BinOpGroup::ANY;
+	}
+}
+
 BinOpNode* BinOpNode::create(Position pos, std::string op_type, ASTNode *lhs, ASTNode *rhs) {
 	return new BinOpNode(pos, map_op_type(op_type), lhs, rhs);
 }
@@ -266,48 +313,94 @@ void BinOpNode::print(std::ostream &out, int offset) {
 	out << "BinOpNode:" << std::endl;
 	lhs->print(out, offset + OFFSET);
 	print_spaces(out, offset + OFFSET);
-	std::string op_str;
-	switch (op_type) {
-		case BinOpType::SUM:
-			op_str = "+";
-			break;
-		case BinOpType::SUB:
-			op_str = "-";
-			break;
-		case BinOpType::OR:
-			op_str = "||";
-			break;
-		case BinOpType::LT:
-			op_str = "<";
-			break;
-		case BinOpType::LE:
-			op_str = "<=";
-			break;
-		case BinOpType::GT:
-			op_str = ">";
-			break;
-		case BinOpType::GE:
-			op_str = ">=";
-			break;
-		case BinOpType::EQ:
-			op_str = "==";
-			break;
-		case BinOpType::NEQ:
-			op_str = "!=";
-			break;
-		case BinOpType::MUL:
-			op_str = "*";
-			break;
-		case BinOpType::DIV:
-			op_str = "/";
-			break;
-		case BinOpType::AND:
-			op_str = "&&";
-			break;
-	}
-	out << op_str << std::endl;
+
+	out << map_op_type_to_str(op_type) << std::endl;
 
 	rhs->print(out, offset + OFFSET);
+}
+
+Type BinOpNode::get_type() {
+	auto t1 = lhs->get_type();
+	auto t2 = rhs->get_type();
+	auto op_group = get_op_group_args(op_type);
+	switch (op_group) {
+		case BinOpGroup::NUM:
+			if (! (t1.is_numerical() && t2.is_numerical()) ) {
+				throw BuildError(Err{lhs->pos,
+									 "invalid arguments types for operation \"" +
+									 map_op_type_to_str(op_type) +
+									 "\", numerical args expected, got: " + t1.to_string() +
+									 " and " + t2.to_string()});
+			}
+			break;
+		case BinOpGroup::BOOL:
+			if (! (t1 == TypeKind::BOOL &&
+					t2 == TypeKind::BOOL)) {
+				throw BuildError(Err{lhs->pos,
+									 "invalid arguments types for operation \"" +
+									 map_op_type_to_str(op_type) +
+									 "\", bool arguments expected, got: " + t1.to_string() +
+									 " and " + t2.to_string() });
+			}
+			break;
+		case BinOpGroup::ANY:
+			if (t1 != t2) {
+				throw BuildError(Err{lhs->pos,
+									 "incompatible arguments types for operation \"" +
+									 map_op_type_to_str(op_type) +
+									 "\", got" + t1.to_string() + " and " + t2.to_string() });
+			}
+			break;
+	}
+	return get_op_group_res(op_type);
+}
+
+TypeKind BinOpNode::get_op_group_res(BinOpType type) {
+	switch (type) {
+		case BinOpType::SUM:
+		case BinOpType::SUB:
+		case BinOpType::MUL:
+		case BinOpType::DIV:
+			return TypeKind::INT;
+		case BinOpType::LT:
+		case BinOpType::LE:
+		case BinOpType::GT:
+		case BinOpType::GE:
+		case BinOpType::OR:
+		case BinOpType::AND:
+		case BinOpType::EQ:
+		case BinOpType::NEQ:
+			return TypeKind::BOOL;
+	}
+}
+
+std::string BinOpNode::map_op_type_to_str(BinOpType type) {
+	switch (type) {
+		case BinOpType::SUM:
+			return "+";
+		case BinOpType::SUB:
+			return "-";
+		case BinOpType::OR:
+			return "||";
+		case BinOpType::LT:
+			return "<";
+		case BinOpType::LE:
+			return "<=";
+		case BinOpType::GT:
+			return ">";
+		case BinOpType::GE:
+			return ">=";
+		case BinOpType::EQ:
+			return "==";
+		case BinOpType::NEQ:
+			return "!=";
+		case BinOpType::MUL:
+			return "*";
+		case BinOpType::DIV:
+			return "/";
+		case BinOpType::AND:
+			return "&&";
+	}
 }
 
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode*> idxs):
@@ -328,6 +421,14 @@ void ArrLookupNode::print(std::ostream &out, int offset) {
 	}
 }
 
+Type ArrLookupNode::get_type() {
+	auto type = ident->get_type();
+	for (int i = 0; i < idxs.size(); i++) {
+		type = type.dropType();
+	}
+	return type;
+}
+
 ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):
 	ASTNode(pos, {len}), type(type), len(len) {}
 
@@ -337,10 +438,24 @@ ArrCreateNode *ArrCreateNode::create(Position pos, Type type, ASTNode *len) {
 	return new ArrCreateNode(pos, type, len);
 }
 
+Type ArrCreateNode::get_type() {
+	return type;
+}
+
 PropertyLookupNode::PropertyLookupNode(Position pos, std::string ident_name, std::string property_name):
 		ASTNode(pos), property_name(std::move(property_name)) {
 	ident = new IdentNode(pos, std::move(ident_name));
 	children.push_back(ident);
+}
+
+Type PropertyLookupNode::get_type() {
+	if (property_name == "len") {
+		if (ident->get_type().getCurrentType() != TypeKind::ARR) {
+			throw BuildError(Err{pos, "invalid len property on non array symbol"});
+		}
+		return TypeKind::INT;
+	}
+	throw BuildError(Err{pos, "unknown \"" + property_name + "\" property"});
 }
 
 PrecondNode::PrecondNode(Position pos, int prob, ASTNode *expr):

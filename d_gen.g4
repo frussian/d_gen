@@ -19,7 +19,7 @@ for          : (precondition NEWLINE)? 'for' pre_asg = assignment? ';' logic_exp
 while        : (precondition NEWLINE)? 'while' logic_expr body ;
 if           : (precondition NEWLINE)? 'if' logic_expr body ('else' body)? ;
 
-precondition : '[' logic_expr ']' ;
+precondition : '[' ('prob' ASSG NUM ';')? logic_expr? ']' ;
 
 //condition    : tl ( '||' tl )* ;
 //tl           : fl ( '&&' fl)* ;
@@ -56,10 +56,10 @@ ASSG_TYPE    : '+=' | '-=' | '*=' | '/=' ;
 CREM_TYPE    : '++' | '--' ;
 CMP_OP       : '<' | '<=' | '>' | '>=' | '==' | '!=' ;
 
-IDENT        : [a-zA-Z][a-zA-Z0-9\-_]* ;
+IDENT        : [a-zA-Z][a-zA-Z0-9_]* ;
 CHAR         : '\'' (. | '\\n' | '\\t') '\'' ;
 STRING       : '"' .*? '"' ;
-NUM          : '-'?[1-9][0-9]* | '-'?[0-9] ;
+NUM          : [1-9][0-9]* | [0-9] ;
 BOOL         : 'true' | 'false' ;
 
 NEWLINE      : ('\r'? '\n' | '\r')+ ;

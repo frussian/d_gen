@@ -19,6 +19,9 @@ void antlr_test() {
 	auto func = builder->parse();
 	func->print(std::cout, 0);
 	//TODO: check break and continue => type-checking => eliminate unreachable code
-	Semantics::eliminate_unreachable_code(func);
-	func->print(std::cout, 0);
+	Semantics sem(func);
+	sem.connect_loops();
+	sem.type_ast();
+	sem.eliminate_unreachable_code();
+//	func->print(std::cout, 0);
 }

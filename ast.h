@@ -5,25 +5,29 @@
 #ifndef D_GEN_AST_H
 #define D_GEN_AST_H
 
+#include <functional>
 #include "d_genParser.h"
 
 #include "type.h"
-
-class Position {
-public:
-	int line, col;
-	Position(int line, int col): line(line), col(col) {};
-};
+#include "Symbol.h"
+#include "Position.h"
 
 class ASTNode {
+protected:
+	std::vector<ASTNode*> children;
 public:
+	using ASTTraverser = const std::function<bool(ASTNode *, std::any&)>&;
+
 	Position pos;
-	explicit ASTNode(Position pos): pos(pos) {};
+
+	explicit ASTNode(Position pos, std::vector<ASTNode*> children = std::vector<ASTNode*>());;
 	virtual ~ASTNode() = default;
 	void print_spaces(std::ostream &out, int offset);
-
+	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
 //	virtual llvm::Value *codegen(CodeGenContext *ctx) {return nullptr;};
+private:
+//	void visitChildren(ASTTraverser cb, std::any ctx, ASTNode *node);
 };
 
 class DefNode;
@@ -47,30 +51,37 @@ public:
 	std::vector<ASTNode*> stmts;
 	explicit BodyNode(Position pos, std::vector<ASTNode*> stmts);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
+};
+
+class PrecondNode: public ASTNode {
+public:
+	int prob = -1;
+	ASTNode *expr = nullptr;
+	explicit PrecondNode(Position pos, int prob, ASTNode *expr);
 };
 
 class IfNode: public ASTNode {
 public:
-	ASTNode *precond;
+	PrecondNode *precond;
 	ASTNode *cond;
 	BodyNode *body, *else_body;
-	explicit IfNode(Position pos, ASTNode *precond, ASTNode *cond, BodyNode *body, BodyNode *else_body);
+	explicit IfNode(Position pos, PrecondNode *precond, ASTNode *cond, BodyNode *body, BodyNode *else_body);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 class ForNode: public ASTNode {
 public:
-	ASTNode *precond;
+	PrecondNode *precond;
 	ASTNode *pre_asg;
 	ASTNode *cond;
 	ASTNode *inc_asg;
 	BodyNode *body;
-	explicit ForNode(Position pos, ASTNode *precond, ASTNode *pre_asg, ASTNode *cond,
+	explicit ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 					 ASTNode *inc_asg, BodyNode *body);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 class DefNode: public ASTNode {
@@ -81,23 +92,23 @@ public:
 	ASTNode *rhs;
 	explicit DefNode(Position pos, std::string name, Type type, ASTNode *rhs);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 class ContinueNode: public ASTNode {
 public:
-	//TODO: make ForNode *
+	ForNode *loop;
 	explicit ContinueNode(Position pos);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 class BreakNode: public ASTNode {
 public:
-	//TODO: make ForNode *
+	ForNode *loop;
 	explicit BreakNode(Position pos);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 class ReturnNode: public ASTNode {
@@ -105,7 +116,7 @@ public:
 	ASTNode *expr;
 	explicit ReturnNode(Position pos, ASTNode *expr);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 enum class AsgType {
@@ -125,7 +136,7 @@ public:
 private:
 	static AsgType map_asg_type(const std::string &type);
 
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 };
 
 enum class CremType {
@@ -172,6 +183,7 @@ class IdentNode: public ASTNode {
 public:
 	std::string name;
 	//type
+	std::shared_ptr<Symbol> symbol;
 	explicit IdentNode(Position pos, std::string name);
 };
 
@@ -199,7 +211,7 @@ public:
 	BinOpType op_type;
 	explicit BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs);
 	static BinOpNode *create(Position pos, std::string op_type, ASTNode *lhs, ASTNode *rhs);
-	void print(std::ostream &out, int offset);
+	void print(std::ostream &out, int offset) override;
 private:
 	static BinOpType map_op_type(const std::string& op_type);
 };

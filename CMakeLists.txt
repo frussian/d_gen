@@ -4,7 +4,7 @@ project(d_gen)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(d_gen main.cpp antlr_test.cpp z3_test.cpp ast.h ast.cpp utils/assert.h type.h type.cpp ASTBuilderVisitor.cpp ASTBuilderVisitor.h BuildError.cpp BuildError.h Semantics.cpp Semantics.h)
+add_executable(d_gen main.cpp antlr_test.cpp z3_test.cpp ast.h ast.cpp utils/assert.h type.h type.cpp ASTBuilderVisitor.cpp ASTBuilderVisitor.h BuildError.cpp BuildError.h Semantics.cpp Semantics.h Symbol.cpp Symbol.h SymbolTable.cpp SymbolTable.h Position.cpp Position.h)
 # rdynamic, needed to discover functions from d_gen by llvm
 set_property(TARGET d_gen PROPERTY ENABLE_EXPORTS ON)
 

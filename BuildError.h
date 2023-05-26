@@ -18,6 +18,7 @@ struct Err {
 class BuildError: std::exception {
 public:
 	std::vector<Err> errors;
+	explicit BuildError(const Err& err);
 	explicit BuildError(std::vector<Err> errors);
 };
 

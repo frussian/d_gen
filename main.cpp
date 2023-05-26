@@ -177,12 +177,13 @@ int main(int argc, char *argv[]) {
 	} catch (const BuildError &err) {
 		std::cout << "errors" << std::endl;
 		for (const auto &e: err.errors) {
-			std::cout << e.msg << std::endl;
+			std::cout << e.pos.line << ":" << e.pos.col << " " << e.msg << std::endl;
 		}
-	} catch (const std::exception &err) {
-		std::cout << "error" << std::endl;
-		std::cout << err.what() << std::endl;
 	}
+//	catch (const std::exception &err) {
+//		std::cout << "error" << std::endl;
+//		std::cout << err.what() << std::endl;
+//	}
 //	J->getExecutionSession().dump(outs());
 	return 0;
 }

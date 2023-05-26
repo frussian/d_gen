@@ -74,7 +74,7 @@ std::any ASTBuilderVisitor::visitChildren(antlr4::tree::ParseTree *node) {
 std::any ASTBuilderVisitor::visitFunction(d_genParser::FunctionContext *ctx) {
 	ASTNode *pre_cond = nullptr;
 	if (ctx->precondition()) {
-		pre_cond = std::any_cast<ASTNode*>(ctx->precondition()->accept(this));
+		pre_cond = std::any_cast<PrecondNode*>(ctx->precondition()->accept(this));
 	}
 	auto ret_type = std::any_cast<Type>(ctx->ret_type->accept(this));
 	auto f_name = ctx->f_name->getText();
@@ -100,9 +100,9 @@ std::any ASTBuilderVisitor::visitBody(d_genParser::BodyContext *ctx) {
 }
 
 std::any ASTBuilderVisitor::visitIf(d_genParser::IfContext *ctx) {
-	ASTNode *precond = nullptr;
+	PrecondNode *precond = nullptr;
 	if (auto precond_ctx = ctx->precondition()) {
-		precond = std::any_cast<ASTNode*>(visitPrecondition(precond_ctx));
+		precond = std::any_cast<PrecondNode*>(visitPrecondition(precond_ctx));
 	}
 
 	auto cond = std::any_cast<ASTNode*>(visitLogic_expr(ctx->logic_expr()));
@@ -116,9 +116,9 @@ std::any ASTBuilderVisitor::visitIf(d_genParser::IfContext *ctx) {
 }
 
 std::any ASTBuilderVisitor::visitWhile(d_genParser::WhileContext *ctx) {
-	ASTNode *precond = nullptr;
+	PrecondNode *precond = nullptr;
 	if (auto precond_ctx = ctx->precondition()) {
-		precond = std::any_cast<ASTNode*>(visitPrecondition(precond_ctx));
+		precond = std::any_cast<PrecondNode*>(visitPrecondition(precond_ctx));
 	}
 	auto cond = std::any_cast<ASTNode*>(visitLogic_expr(ctx->logic_expr()));
 	auto body = std::any_cast<BodyNode*>(visitBody(ctx->body()));
@@ -127,9 +127,9 @@ std::any ASTBuilderVisitor::visitWhile(d_genParser::WhileContext *ctx) {
 }
 
 std::any ASTBuilderVisitor::visitFor(d_genParser::ForContext *ctx) {
-	ASTNode *precond = nullptr;
+	PrecondNode *precond = nullptr;
 	if (auto precond_ctx = ctx->precondition()) {
-		precond = std::any_cast<ASTNode*>(visitPrecondition(precond_ctx));
+		precond = std::any_cast<PrecondNode*>(visitPrecondition(precond_ctx));
 	}
 	ASTNode *pre_asg = nullptr;
 	if (ctx->pre_asg) {
@@ -200,7 +200,16 @@ std::any ASTBuilderVisitor::visitCrem_asg(d_genParser::Crem_asgContext *ctx) {
 }
 
 std::any ASTBuilderVisitor::visitPrecondition(d_genParser::PreconditionContext *ctx) {
-	return visitLogic_expr(ctx->logic_expr());
+	int prob = -1;
+	if (auto num = ctx->NUM()) {
+		prob = std::atoi(num->getText().c_str());
+	}
+	ASTNode *expr = nullptr;
+	if (ctx->logic_expr()) {
+		expr = std::any_cast<ASTNode*>( visitLogic_expr(ctx->logic_expr()) );
+	}
+	return new PrecondNode(getStartPos(ctx), prob, expr);
+//	return visitLogic_expr(ctx->logic_expr());
 }
 
 std::any ASTBuilderVisitor::visitLogic_expr(d_genParser::Logic_exprContext *ctx) {

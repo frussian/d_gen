@@ -6,13 +6,21 @@
 #define D_GEN_SEMANTICS_H
 
 #include "ast.h"
+#include "Symbol.h"
 
 class Semantics {
 public:
-	static void eliminate_unreachable_code(FunctionNode *func);
+	std::vector<Symbol*> symbols;
 
+	explicit Semantics(FunctionNode *func);
+	void eliminate_unreachable_code();
+	void connect_loops();
+	void type_ast();
 private:
-	static void eliminate_unreachable_code_visit_body(BodyNode *body);
+	FunctionNode *func;
+	void eliminate_unreachable_code_visit_body(BodyNode *body);
+	void connect_loops_visit_body(BodyNode *body, ForNode *loop);
+	static bool type_visitor(ASTNode*, std::any &ctx);
 };
 
 

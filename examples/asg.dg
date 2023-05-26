@@ -1,6 +1,11 @@
 bool smpl_asg(int i) {
-	i = 1
+	i = 1-1
+	string str =  "at atr"
+	if i >= 0 {
+		int i = 2
+		i++
+		i = str.len
+	}
 	return i == 2
-
-	a = 1
 }
+

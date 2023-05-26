@@ -9,6 +9,9 @@
 
 #define OFFSET 4
 
+ASTNode::ASTNode(Position pos, std::vector<ASTNode *> children) :
+		pos(pos), children(std::move(children)) {}
+
 void ASTNode::print_spaces(std::ostream &out, int offset) {
 	for (int i = 0; i < offset; i++) {
 		out << " ";
@@ -20,10 +23,23 @@ void ASTNode::print(std::ostream &out, int offset) {
 	out << "ASTNode" << std::endl;
 }
 
+void ASTNode::visitChildren(ASTTraverser cb, std::any ctx) {
+	for (const auto &child: children) {
+		if (!child) continue;
+		//ctx may change => it's updated in the next
+		bool traverse_children = cb(child, ctx);
+		if (traverse_children) child->visitChildren(cb, ctx);
+	}
+}
+
 FunctionNode::FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
 						   std::vector<DefNode *> args, BodyNode *body):
-	ASTNode(pos), pre_cond(pre_cond), ret_type(ret_type), name(std::move(name)),
-	args(std::move(args)), body(body) {}
+	ASTNode(pos, {pre_cond, body}), pre_cond(pre_cond), ret_type(ret_type), name(std::move(name)),
+	args(std::move(args)), body(body) {
+	for (const auto arg: this->args) {
+		children.push_back(arg);
+	}
+}
 
 void FunctionNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -32,7 +48,11 @@ void FunctionNode::print(std::ostream &out, int offset) {
 }
 
 BodyNode::BodyNode(Position pos, std::vector<ASTNode *> stmts):
-	ASTNode(pos), stmts(std::move(stmts)) {}
+	ASTNode(pos), stmts(std::move(stmts)) {
+	for (const auto stmt: this->stmts) {
+		children.push_back(stmt);
+	}
+}
 
 void BodyNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -42,9 +62,10 @@ void BodyNode::print(std::ostream &out, int offset) {
 	}
 }
 
-IfNode::IfNode(Position pos, ASTNode *precond, ASTNode *cond,
+IfNode::IfNode(Position pos, PrecondNode *precond, ASTNode *cond,
 			   BodyNode *body, BodyNode *else_body):
-	ASTNode(pos), precond(precond), cond(cond), body(body), else_body(else_body) {}
+	ASTNode(pos, {precond, cond, body, else_body}), precond(precond), cond(cond), body(body), else_body(else_body) {
+}
 
 void IfNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -55,9 +76,9 @@ void IfNode::print(std::ostream &out, int offset) {
 	}
 }
 
-ForNode::ForNode(Position pos, ASTNode *precond, ASTNode *pre_asg, ASTNode *cond,
+ForNode::ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 				 ASTNode *inc_asg, BodyNode *body):
-	ASTNode(pos), precond(precond), pre_asg(pre_asg), cond(cond), inc_asg(inc_asg),
+	ASTNode(pos, {precond, pre_asg, cond, inc_asg, body}), precond(precond), pre_asg(pre_asg), cond(cond), inc_asg(inc_asg),
 	body(body) {}
 
 void ForNode::print(std::ostream &out, int offset) {
@@ -67,7 +88,7 @@ void ForNode::print(std::ostream &out, int offset) {
 }
 
 DefNode::DefNode(Position pos, std::string name, Type type, ASTNode *rhs):
-	ASTNode(pos), name(std::move(name)), type(type), rhs(rhs) {}
+	ASTNode(pos, {rhs}), name(std::move(name)), type(type), rhs(rhs) {}
 
 void DefNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -95,7 +116,7 @@ void BreakNode::print(std::ostream &out, int offset) {
 	out << "BreakNode" << std::endl;
 }
 
-ReturnNode::ReturnNode(Position pos, ASTNode *expr): ASTNode(pos), expr(expr) {}
+ReturnNode::ReturnNode(Position pos, ASTNode *expr): ASTNode(pos, {expr}), expr(expr) {}
 
 void ReturnNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -104,7 +125,7 @@ void ReturnNode::print(std::ostream &out, int offset) {
 }
 
 AsgNode::AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs):
-		ASTNode(pos), lhs(lhs), rhs(rhs) {}
+		ASTNode(pos, {lhs, rhs}), lhs(lhs), rhs(rhs) {}
 
 void AsgNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
@@ -201,7 +222,7 @@ BoolNode *BoolNode::create(Position pos, antlr4::tree::TerminalNode *token) {
 IdentNode::IdentNode(Position pos, std::string name): ASTNode(pos), name(std::move(name)) {}
 
 BinOpNode::BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs):
-	ASTNode(pos), lhs(lhs), rhs(rhs), op_type(op_type) {}
+	ASTNode(pos, {lhs, rhs}), lhs(lhs), rhs(rhs), op_type(op_type) {}
 
 BinOpType BinOpNode::map_op_type(const std::string& op_type) {
 	if (op_type == "+") {
@@ -289,10 +310,12 @@ void BinOpNode::print(std::ostream &out, int offset) {
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, ASTNode *index):
 	ASTNode(pos), index(index) {
 	ident = new IdentNode(pos, std::move(ident_name));
+	children.push_back(ident);
+	children.push_back(index);
 }
 
-ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len): ASTNode(pos), type(type),
-																	 len(len) {}
+ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):
+	ASTNode(pos, {len}), type(type), len(len) {}
 
 ArrCreateNode *ArrCreateNode::create(Position pos, Type type, ASTNode *len) {
 	auto types = type.types;
@@ -303,4 +326,8 @@ ArrCreateNode *ArrCreateNode::create(Position pos, Type type, ASTNode *len) {
 PropertyLookupNode::PropertyLookupNode(Position pos, std::string ident_name, std::string property_name):
 		ASTNode(pos), property_name(std::move(property_name)) {
 	ident = new IdentNode(pos, std::move(ident_name));
+	children.push_back(ident);
 }
+
+PrecondNode::PrecondNode(Position pos, int prob, ASTNode *expr):
+	ASTNode(pos, {expr}), prob(prob), expr(expr) {}

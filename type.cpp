@@ -54,8 +54,8 @@ Type Type::create(std::vector<antlr4::Token *> &tokens) {
 
 std::string Type::to_string() {
 	std::string str;
-	for (const auto &type: (*types)) {
-		switch (type) {
+	for (int i = pos; i < types->size(); i++) {
+		switch (types->at(i)) {
 			case TypeKind::INT: {
 				str += "int";
 				break;
@@ -83,6 +83,10 @@ std::string Type::to_string() {
 		}
 	}
 
+	if (str.empty()) {
+		return "invalid";
+	}
+
 	return str;
 }
 
@@ -108,7 +112,7 @@ bool Type::operator!=(const Type &rhs) const {
 }
 
 bool Type::operator==(const TypeKind &rhs) const {
-	if (length() != 1) {
+	if (length() > 1) {
 		return false;
 	}
 
@@ -128,9 +132,9 @@ bool Type::is_numerical() const {
 }
 
 bool Type::is_scalar() const {
-	return length() == 1;
+	return length() <= 1;
 }
 
 int Type::length() const {
-	return types->size() - pos;
+	return (int)types->size() - pos;
 }

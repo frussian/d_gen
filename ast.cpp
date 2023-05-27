@@ -426,6 +426,9 @@ Type ArrLookupNode::get_type() {
 	for (int i = 0; i < idxs.size(); i++) {
 		type = type.dropType();
 	}
+	if (type == TypeKind::INVALID) {
+		throw BuildError(Err{pos, "array dereference on non array variable"});
+	}
 	return type;
 }
 

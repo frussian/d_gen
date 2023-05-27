@@ -64,7 +64,7 @@ void Semantics::connect_loops_visit_body(BodyNode *body, ForNode *loop) {
 void Semantics::type_ast() {
 	auto *s_table = new SymbolTable;
 	for (const auto &arg: func->args) {
-		s_table->add_symbol(arg->name, std::make_shared<Symbol>(arg->pos, arg->type, arg->name));
+		s_table->add_symbol(arg->name, Symbol::create_symbol(arg->pos, arg->type, arg->name, true));
 	}
 	func->body->visitChildren(&type_visitor, s_table);
 }
@@ -74,7 +74,9 @@ bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
 
 	if (auto def = dynamic_cast<DefNode*>(node)) {
 		auto new_table = new SymbolTable(s_table);
-		new_table->add_symbol(def->name, std::make_shared<Symbol>(def->pos, def->type, def->name));
+		auto sym = Symbol::create_symbol(def->pos, def->type, def->name);
+		def->sym = sym;
+		new_table->add_symbol(def->name, sym);
 		ctx = new_table;
 	} else if (auto ident = dynamic_cast<IdentNode*>(node)) {
 		auto symbol = s_table->find_symbol(ident->name);
@@ -107,6 +109,15 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 		}
 		return false;
 	} else if (auto asg = dynamic_cast<AsgNode*>(node)) {
+		if (auto ident = dynamic_cast<IdentNode*>(asg->lhs)) {
+			if (ident->symbol->is_input) {
+				throw BuildError(Err{ident->pos, "can not assign to input variable"});
+			}
+		} else if (auto arr_lookup = dynamic_cast<ArrLookupNode*>(asg->lhs)) {
+			if (arr_lookup->ident->symbol->is_input) {
+				throw BuildError(Err{arr_lookup->pos, "can not assign to input variable"});
+			}
+		}
 		type_check_asg(asg);
 		return false;
 	} else if (auto def = dynamic_cast<DefNode*>(node)) {

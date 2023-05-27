@@ -7,6 +7,7 @@
 #include "ast.h"
 #include "utils/assert.h"
 #include "BuildError.h"
+#include "CodegenVisitor.h"
 
 #define OFFSET 4
 
@@ -40,6 +41,10 @@ Type ASTNode::get_type() {
 	return Type(TypeKind::INVALID);
 }
 
+llvm::Value *ASTNode::code_gen(CodegenVisitor *visitor) {
+	return nullptr;
+}
+
 FunctionNode::FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
 						   std::vector<DefNode *> args, BodyNode *body):
 	ASTNode(pos, {pre_cond, body}), pre_cond(pre_cond), ret_type(ret_type), name(std::move(name)),
@@ -60,6 +65,10 @@ BodyNode::BodyNode(Position pos, std::vector<ASTNode *> stmts):
 	for (const auto stmt: this->stmts) {
 		children.push_back(stmt);
 	}
+}
+
+llvm::Value *BodyNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 void BodyNode::print(std::ostream &out, int offset) {
@@ -112,6 +121,10 @@ void DefNode::print(std::ostream &out, int offset) {
 	}
 }
 
+llvm::Value *DefNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 ContinueNode::ContinueNode(Position pos): ASTNode(pos) {}
 
 void ContinueNode::print(std::ostream &out, int offset) {
@@ -132,6 +145,10 @@ void ReturnNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
 	out << "ReturnNode:" << std::endl;
 	expr->print(out, offset + OFFSET);
+}
+
+llvm::Value *ReturnNode::code_gen(CodegenVisitor *visitor) {
+	visitor->code_gen(this);
 }
 
 AsgNode::AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs):
@@ -180,6 +197,10 @@ AsgType AsgNode::map_asg_type(const std::string &type) {
 	ASSERT(false, "invalid asg type " + type);
 }
 
+llvm::Value *AsgNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 AsgNode *CremNode::create(Position pos, ASTNode *lhs, const std::string &type) {
 	BinOpNode *rhs = nullptr;
 	switch (map_crem_type(type)) {
@@ -213,10 +234,18 @@ Type CharNode::get_type() {
 	return TypeKind::CHAR;
 }
 
+llvm::Value *CharNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 StringNode::StringNode(Position pos, std::string str): ASTNode(pos), str(std::move(str)) {}
 
 Type StringNode::get_type() {
 	return TypeKind::STRING;
+}
+
+llvm::Value *StringNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 NumberNode::NumberNode(Position pos, int num): ASTNode(pos), num(num) {}
@@ -228,6 +257,10 @@ NumberNode *NumberNode::create(Position pos, antlr4::tree::TerminalNode *token) 
 
 Type NumberNode::get_type() {
 	return TypeKind::INT;
+}
+
+llvm::Value *NumberNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 BoolNode::BoolNode(Position pos, bool val): ASTNode(pos), val(val) {}
@@ -245,10 +278,18 @@ Type BoolNode::get_type() {
 	return TypeKind::BOOL;
 }
 
+llvm::Value *BoolNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 IdentNode::IdentNode(Position pos, std::string name): ASTNode(pos), name(std::move(name)) {}
 
 Type IdentNode::get_type() {
 	return symbol->type;
+}
+
+llvm::Value *IdentNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 BinOpNode::BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs):
@@ -401,6 +442,10 @@ std::string BinOpNode::map_op_type_to_str(BinOpType type) {
 		case BinOpType::AND:
 			return "&&";
 	}
+}
+
+llvm::Value *BinOpNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode*> idxs):

@@ -6,11 +6,18 @@
 #define D_GEN_AST_H
 
 #include <functional>
+
+namespace llvm {
+	class Value;
+}
+
 #include "d_genParser.h"
 
 #include "type.h"
 #include "Symbol.h"
 #include "Position.h"
+
+class CodegenVisitor;
 
 class ASTNode {
 protected:
@@ -25,10 +32,9 @@ public:
 	void print_spaces(std::ostream &out, int offset);
 	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
-	virtual Type get_type();
 //	virtual llvm::Value *codegen(CodeGenContext *ctx) {return nullptr;};
-private:
-//	void visitChildren(ASTTraverser cb, std::any ctx, ASTNode *node);
+	virtual llvm::Value *code_gen(CodegenVisitor *visitor);
+	virtual Type get_type();
 };
 
 class DefNode;
@@ -53,6 +59,8 @@ public:
 	explicit BodyNode(Position pos, std::vector<ASTNode*> stmts);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value *code_gen(CodegenVisitor *visitor) override;
 };
 
 class PrecondNode: public ASTNode {
@@ -91,9 +99,12 @@ public:
 	std::string name;
 	Type type;
 	ASTNode *rhs;
+	std::shared_ptr<Symbol> sym;
 	explicit DefNode(Position pos, std::string name, Type type, ASTNode *rhs);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class ContinueNode: public ASTNode {
@@ -118,6 +129,8 @@ public:
 	explicit ReturnNode(Position pos, ASTNode *expr);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 enum class AsgType {
@@ -134,6 +147,7 @@ public:
 	ASTNode *rhs;
 	explicit AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs);
 	static AsgNode *create(Position pos, ASTNode *lhs, const std::string &type, ASTNode *rhs);
+	llvm::Value *code_gen(CodegenVisitor *visitor);
 private:
 	static AsgType map_asg_type(const std::string &type);
 
@@ -160,6 +174,8 @@ public:
 	static CharNode *create(Position pos, antlr4::tree::TerminalNode *token);
 
 	Type get_type() override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class StringNode: public ASTNode {
@@ -168,6 +184,8 @@ public:
 	explicit StringNode(Position pos, std::string str);
 
 	Type get_type() override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class NumberNode: public ASTNode {
@@ -177,6 +195,7 @@ public:
 	static NumberNode *create(Position pos, antlr4::tree::TerminalNode *token);
 
 	Type get_type() override;
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class BoolNode: public ASTNode {
@@ -186,6 +205,7 @@ public:
 	static BoolNode *create(Position pos, antlr4::tree::TerminalNode *token);
 
 	Type get_type() override;
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class IdentNode: public ASTNode {
@@ -196,6 +216,8 @@ public:
 	explicit IdentNode(Position pos, std::string name);
 
 	Type get_type() override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 enum class BinOpType {
@@ -230,6 +252,7 @@ public:
 	static BinOpNode *create(Position pos, std::string op_type, ASTNode *lhs, ASTNode *rhs);
 	void print(std::ostream &out, int offset) override;
 	Type get_type() override;
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 private:
 	static BinOpType map_op_type(const std::string& op_type);
 	static BinOpGroup get_op_group_args(BinOpType type);

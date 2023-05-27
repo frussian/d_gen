@@ -1,5 +1,4 @@
 bool smpl_asg(int i) {
-	i = 1-1
 	string str =  "Hello, World!"
 	int[] arr = int[2]
 	if i >= 0 {

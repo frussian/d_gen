@@ -1,0 +1,5 @@
+int simple(int i) {
+	int j
+	j = i + 1
+	return j
+}

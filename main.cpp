@@ -31,6 +31,17 @@ extern "C" double printd(double X) {
 	return 0;
 }
 
+struct test_struct {
+	int a;
+};
+
+test_struct st_global = {50};
+
+extern "C" int num_test(test_struct *ts) {
+	std::cout << "invoked num_test" << std::endl;
+	return ts->a;
+}
+
 llvm::orc::ThreadSafeModule createDemoModule() {
 	auto Context = std::make_unique<llvm::LLVMContext>();
 	auto M = std::make_unique<llvm::Module>("test", *Context);
@@ -77,8 +88,27 @@ llvm::orc::ThreadSafeModule createDemoModule() {
 
 	//end test
 
+	//test struct
+	cb_t = llvm::FunctionType::get(llvm::Type::getInt32Ty(*Context), {llvm::Type::getInt8PtrTy(*Context)}, false);
+	cb = M->getOrInsertFunction("num_test", cb_t);
+	auto ptr_int = builder.getInt64((uint64_t)&st_global);
+	auto arg = llvm::ConstantExpr::getIntToPtr(ptr_int, builder.getInt8PtrTy());
+	auto ret_val = builder.CreateCall(cb, {arg});
+	std::cout << "ret val type ";
+	ret_val->getType()->print(llvm::outs());
+	std::cout << std::endl;
+	//end test struct
+
 	// Create the add instruction, inserting it into the end of BB.
 	llvm::Value *Add = builder.CreateAdd(One, ArgX);
+
+	auto alloca = builder.CreateAlloca(builder.getInt32Ty());
+	builder.CreateStore(ret_val, alloca);
+
+	std::cout << "add val type ";
+	Add->getType()->print(llvm::outs());
+	std::cout << std::endl;
+
 	// Create the return instruction and add it to the basic block
 	builder.CreateRet(Add);
 

@@ -20,6 +20,7 @@ CodegenVisitor::CodegenVisitor() {
 
 llvm::Value *CodegenVisitor::code_gen(FunctionNode *func) {
 	code_gen(func->body);
+	return nullptr;
 }
 
 llvm::Value *CodegenVisitor::code_gen(BodyNode *body) {
@@ -27,6 +28,8 @@ llvm::Value *CodegenVisitor::code_gen(BodyNode *body) {
 	for (auto stmt: body->stmts) {
 		stmt->code_gen(this);
 	}
+
+	return nullptr;
 }
 
 llvm::Value *CodegenVisitor::code_gen(BoolNode *node) {
@@ -47,7 +50,7 @@ llvm::Value *CodegenVisitor::code_gen(CharNode *node) {
 
 llvm::Value *CodegenVisitor::code_gen(BinOpNode *node) {
 	auto lhs = node->lhs->code_gen(this);
-	auto rhs = node->lhs->code_gen(this);
+	auto rhs = node->rhs->code_gen(this);
 	switch (node->op_type) {
 		case BinOpType::SUM:
 			return builder->CreateAdd(lhs, rhs);
@@ -90,6 +93,8 @@ llvm::Value *CodegenVisitor::code_gen(DefNode *node) {
 	std::cout << "visiting def node" << std::endl;
 	node->sym->create_alloca(get_ctx());
 	//TODO: process rhs
+
+	return nullptr;
 }
 
 LLVMCtx CodegenVisitor::get_ctx() {
@@ -108,10 +113,11 @@ llvm::orc::ThreadSafeModule CodegenVisitor::get_module() {
 llvm::Value *CodegenVisitor::code_gen(AsgNode *node) {
 	std::cout << "visiting asg node" << std::endl;
 	//TODO: remove dynamic_cast, check all function
+	//TODO: get_address method
 	auto lhs = dynamic_cast<IdentNode*>(node->lhs);
 //	auto lhs = node->lhs->code_gen(this);
-	std::cout << lhs << std::endl;
 	auto rhs = node->rhs->code_gen(this);
-	std::cout << rhs << std::endl;
-	return builder->CreateStore(rhs, lhs->symbol->alloca);
+	auto alloca = lhs->symbol->alloca;
+
+	return builder->CreateStore(rhs, alloca);
 }

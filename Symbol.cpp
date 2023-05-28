@@ -90,8 +90,8 @@ llvm::Value *NumberSym::code_gen(LLVMCtx ctx) {
 	return ctx.builder->CreateCall(cb, {ptr});
 }
 
-llvm::Type *NumberSym::get_cb_func_type(llvm::LLVMContext *ctx) {
-	return llvm::FunctionType::get(llvm::Type::getInt32Ty(*ctx), {llvm::Type::getInt32PtrTy(*ctx)}, false);
+llvm::FunctionType *NumberSym::get_cb_func_type(llvm::LLVMContext *ctx) {
+	return llvm::FunctionType::get(llvm::Type::getInt32Ty(*ctx), {llvm::Type::getInt8PtrTy(*ctx)}, false);
 }
 
 NumberSym::NumberSym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}

@@ -61,7 +61,7 @@ public:
 
 	explicit NumberSym(Position pos, Type type, std::string name, bool is_input = false);
 
-	static llvm::Type *get_cb_func_type(llvm::LLVMContext *ctx);
+	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
 };
 
 //TODO:

@@ -38,6 +38,7 @@ void antlr_test() {
 	auto d_gen_func = (void(*)())cantFail(J->lookup("d_gen_func")).getAddress();
 
 	//loop
+	std::cout << "calling d_gen_func" << std::endl;
 	d_gen_func();
 	std::cout << "called d_gen_func" << std::endl;
 }

@@ -30,6 +30,10 @@ public:
 	llvm::Value *code_gen(ReturnNode *node);
 	llvm::Value *code_gen(AsgNode *node);
 
+	llvm::Value *code_gen(ArrLookupNode *node);
+	llvm::Value *code_gen(PropertyLookupNode *node);
+	llvm::Value *code_gen(ArrCreateNode *node);
+
 	llvm::orc::ThreadSafeModule get_module();
 
 	llvm::Value *code_gen();
@@ -38,6 +42,7 @@ private:
 	std::unique_ptr<llvm::Module> mod;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	LLVMCtx get_ctx();
+	llvm::Value *get_address(ASTNode *node);
 };
 
 #endif //D_GEN_CODEGENVISITOR_H

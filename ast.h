@@ -271,6 +271,8 @@ public:
 	void print(std::ostream &out, int offset) override;
 
 	Type get_type() override;
+
+	llvm::Value *code_gen(CodegenVisitor *visitor) override;
 };
 
 class ArrCreateNode: public ASTNode {
@@ -290,6 +292,8 @@ public:
 	explicit PropertyLookupNode(Position pos, std::string ident_name, std::string property_name);
 
 	Type get_type() override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 

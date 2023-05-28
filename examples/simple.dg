@@ -1,5 +1,6 @@
-int simple(int i) {
-	int j
-	j = i + 1
-	return j
+int simple(int i, string str) {
+	int j = str.len
+	char ret_char = str[182]
+
+	return str[15] + 0
 }

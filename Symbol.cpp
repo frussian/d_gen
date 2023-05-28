@@ -5,6 +5,32 @@
 #include "Symbol.h"
 #include "utils/assert.h"
 
+extern "C" uint8_t *arr_rand_gen(ArraySym *arr);
+extern "C" int8_t bool_rand_gen(BoolSym *sym);
+extern "C" int32_t num_rand_gen(NumberSym *sym);
+extern "C" int8_t char_rand_gen(CharSym *sym);
+
+static void fill_dest(std::shared_ptr<Symbol> sym, uint8_t *dest) {
+	auto pointed_sizeof = sym->get_sizeof();
+	if (auto num = std::dynamic_pointer_cast<NumberSym>(sym)) {
+		auto v = num_rand_gen(num.get());
+		memcpy(dest, &v, pointed_sizeof);
+	} else if (auto bool_v = std::dynamic_pointer_cast<BoolSym>(sym)) {
+		auto v = bool_rand_gen(bool_v.get());
+		memcpy(dest, &v, pointed_sizeof);
+	} else if (auto char_v = std::dynamic_pointer_cast<CharSym>(sym)) {
+		auto v = char_rand_gen(char_v.get());
+		memcpy(dest, &v, pointed_sizeof);
+	} else if (auto arr_v = std::dynamic_pointer_cast<ArraySym>(sym)) {
+		auto v = arr_rand_gen(arr_v.get());
+		memcpy(dest, &v, pointed_sizeof);
+	} else {
+		ASSERT(false, "unexpected type when constructing arr");
+	}
+}
+
+std::unordered_map<uint8_t*, uint8_t> Symbol::allocated_vals;
+
 Symbol::Symbol(Position pos, Type type, std::string name, bool is_input):
 	pos(pos), type(type), name(std::move(name)), is_input(is_input) {}
 
@@ -18,18 +44,22 @@ llvm::Value *Symbol::get_ptr(void *ptr, LLVMCtx ctx) {
 }
 
 std::shared_ptr<Symbol> Symbol::create_symbol(Position pos, Type type, std::string name, bool is_input) {
+	std::shared_ptr<std::vector<TypeKind>> str_t;
+
 	switch (type.getCurrentType()) {
 		case TypeKind::INT:
 			return std::shared_ptr<Symbol>(new NumberSym(pos, type, std::move(name), is_input));
 		case TypeKind::STRING:
-			return std::shared_ptr<Symbol>(new StringSym(pos, type, std::move(name), is_input));
-			break;
+			str_t = std::make_shared<std::vector<TypeKind>>();
+			str_t->push_back(TypeKind::ARR);
+			str_t->push_back(TypeKind::CHAR);
+			return std::shared_ptr<Symbol>(new StringSym(pos, Type(str_t), std::move(name), is_input));
 		case TypeKind::CHAR:
-			break;
+			return std::shared_ptr<Symbol>(new CharSym(pos, type, std::move(name), is_input));
 		case TypeKind::BOOL:
-			break;
+			return std::shared_ptr<Symbol>(new BoolSym(pos, type, std::move(name), is_input));
 		case TypeKind::ARR:
-			break;
+			return std::shared_ptr<Symbol>(new ArraySym(pos, type, std::move(name), is_input));
 		case TypeKind::INVALID:
 			break;
 	}
@@ -67,15 +97,11 @@ llvm::Type *Symbol::map_type_to_llvm_type(Type type, LLVMCtx ctx) {
 	return llvm_t;
 }
 
-int32_t get_val_int(Symbol *) {
-
+int Symbol::get_sizeof() {
+	return 0;
 }
 
-void set_val_arr(void *arr, int *idxs, int len, void *val) {
-
-}
-
-extern "C" int32_t num_node_gen(NumberSym *sym) {
+extern "C" int32_t num_rand_gen(NumberSym *sym) {
 	if (!sym->num.has_value()) {
 		//todo: use c++ 11 rand lib
 		sym->num = std::rand() % 200;
@@ -85,7 +111,7 @@ extern "C" int32_t num_node_gen(NumberSym *sym) {
 }
 
 llvm::Value *NumberSym::code_gen(LLVMCtx ctx) {
-	auto cb = ctx.mod->getOrInsertFunction("num_node_gen", get_cb_func_type(ctx.ctx));
+	auto cb = ctx.mod->getOrInsertFunction("num_rand_gen", get_cb_func_type(ctx.ctx));
 	auto ptr = Symbol::get_ptr(this, ctx);
 	return ctx.builder->CreateCall(cb, {ptr});
 }
@@ -96,7 +122,159 @@ llvm::FunctionType *NumberSym::get_cb_func_type(llvm::LLVMContext *ctx) {
 
 NumberSym::NumberSym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}
 
+int NumberSym::get_sizeof() {
+	return sizeof(uint32_t);
+}
 
 ArraySym::ArraySym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}
 
-StringSym::StringSym(Position pos, Type type, std::string name, bool is_input) : ArraySym(pos, type, name, is_input) {}
+extern "C" void get_val_arr(ArraySym *arr, int *idxs, int len, uint8_t *dest) {
+	int i;
+	for (i = 0; i < len - 1; i++) {
+		auto arr_size = arr->get_size();
+		if (idxs[i] >= arr_size) {
+			throw std::runtime_error("out of bounds");
+		}
+		arr = dynamic_cast<ArraySym*>(arr->arr[idxs[i]].get());
+	}
+
+	auto arr_size = arr->get_size();
+	if (idxs[i] >= arr_size) {
+		throw std::runtime_error("out of bounds");
+	}
+	auto sym = arr->arr[idxs[i]];
+	fill_dest(sym, dest);
+}
+
+extern "C" uint8_t *arr_rand_gen(ArraySym *arr) {
+	int size = arr->get_size();
+	int pointed_sizeof = arr->get_pointed_type_elem()->get_sizeof();
+	auto *data = static_cast<uint8_t *>(malloc(size * pointed_sizeof));
+
+	//TODO: store all mallocs to free them at the end
+	Symbol::allocated_vals[data] = size;
+
+	for (int i = 0; i < arr->arr.size(); i++) {
+		auto val = arr->arr[i];
+		fill_dest(val, data + i * pointed_sizeof);
+	}
+
+	return data;
+}
+
+llvm::Value *ArraySym::code_gen(LLVMCtx ctx) {
+	//for deep copy
+	auto ret_type = map_type_to_llvm_type(type, ctx);
+	auto cb = ctx.mod->getOrInsertFunction("arr_rand_gen", get_cb_func_type(ret_type, ctx.ctx));
+	auto ptr = Symbol::get_ptr(this, ctx);
+	return ctx.builder->CreateCall(cb, {ptr});
+}
+
+llvm::FunctionType *ArraySym::get_cb_func_type(llvm::Type *ret_type, llvm::LLVMContext *ctx) {
+	return llvm::FunctionType::get(ret_type, {llvm::Type::getInt8PtrTy(*ctx)}, false);
+}
+
+int ArraySym::get_size() {
+	if (!inited_size.has_value()) {
+		inited_size = std::rand() % 200;
+		arr.reserve(*inited_size);
+		for (int i = 0; i < *inited_size; i++) {
+			arr.push_back(get_pointed_type_elem());
+		}
+	}
+	std::cout << "get size " << *inited_size << std::endl;
+	return *inited_size;
+}
+
+std::shared_ptr<Symbol> ArraySym::get_pointed_type_elem() {
+	auto pointed_type = type.dropType();
+	return create_symbol(pos, pointed_type, name+"_deref", true);
+}
+
+int ArraySym::get_sizeof() {
+	return sizeof(uint8_t*);
+}
+
+llvm::Value *ArraySym::code_gen_idx(std::vector<llvm::Value *> &idx, LLVMCtx ctx) {
+	auto t = llvm::IntegerType::getInt32Ty(*ctx.ctx);
+	auto var_arr = ctx.builder->CreateAlloca(t, ctx.builder->getInt32(idx.size()), "arr_idxs");
+	for (int i = 0; i < idx.size(); i++) {
+		auto el_ptr = ctx.builder->CreateGEP(t, var_arr, ctx.builder->getInt64(i));
+		ctx.builder->CreateStore(idx[i], el_ptr);
+	}
+
+	auto referenced_t = type;
+	for (int i = 0; i < idx.size(); i++) {
+		referenced_t = referenced_t.dropType();
+	}
+
+	auto dest_val = ctx.builder->CreateAlloca(map_type_to_llvm_type(referenced_t, ctx), nullptr, "dest_val");
+
+	//void (ArrSymbol *, int *idxs, int len, uint8_t *dest)
+	auto idx_cb_t = llvm::FunctionType::get(llvm::Type::getVoidTy(*ctx.ctx),
+										  {llvm::Type::getInt8PtrTy(*ctx.ctx),
+										   llvm::Type::getInt32PtrTy(*ctx.ctx),
+										   llvm::Type::getInt32Ty(*ctx.ctx),
+										   dest_val->getAllocatedType()->getPointerTo()}, false);
+
+	auto idx_cb = ctx.mod->getOrInsertFunction("get_val_arr", idx_cb_t);
+
+	ctx.builder->CreateCall(idx_cb, {get_ptr(this, ctx), var_arr, ctx.builder->getInt32(idx.size()), dest_val});
+
+	return ctx.builder->CreateLoad(dest_val->getAllocatedType(), dest_val);
+}
+
+//TODO: change passed type to []char
+StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
+	ArraySym(pos, type, std::move(name), is_input) {}
+
+extern "C" int8_t char_rand_gen(CharSym *sym) {
+	if (!sym->ch.has_value()) {
+		//todo: use c++ 11 rand lib
+		sym->ch = std::rand() % 256;
+	}
+	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
+	return *sym->ch;
+}
+
+llvm::Value *CharSym::code_gen(LLVMCtx ctx) {
+	auto cb = ctx.mod->getOrInsertFunction("char_rand_gen", get_cb_func_type(ctx.ctx));
+	auto ptr = Symbol::get_ptr(this, ctx);
+	return ctx.builder->CreateCall(cb, {ptr});
+}
+
+CharSym::CharSym(Position pos, Type type, std::string name, bool is_input) : Symbol(pos, type, name, is_input) {}
+
+llvm::FunctionType *CharSym::get_cb_func_type(llvm::LLVMContext *ctx) {
+	return llvm::FunctionType::get(llvm::Type::getInt8Ty(*ctx), {llvm::Type::getInt8PtrTy(*ctx)}, false);
+}
+
+int CharSym::get_sizeof() {
+	return sizeof(uint8_t);
+}
+
+extern "C" int8_t bool_rand_gen(BoolSym *sym) {
+	if (!sym->val.has_value()) {
+		//todo: use c++ 11 rand lib
+		sym->val = std::rand() % 2;
+	}
+	std::cout << "get bool " << *sym->val << std::endl;
+	return (int8_t)*sym->val;
+}
+
+llvm::Value *BoolSym::code_gen(LLVMCtx ctx) {
+	auto cb = ctx.mod->getOrInsertFunction("bool_rand_gen", get_cb_func_type(ctx.ctx));
+	auto ptr = Symbol::get_ptr(this, ctx);
+	return ctx.builder->CreateCall(cb, {ptr});
+}
+
+BoolSym::BoolSym(Position pos, Type type, std::string name, bool is_input) : Symbol(pos, type, name, is_input) {}
+
+llvm::FunctionType *BoolSym::get_cb_func_type(llvm::LLVMContext *ctx) {
+	return llvm::FunctionType::get(llvm::Type::getInt8Ty(*ctx), {llvm::Type::getInt8PtrTy(*ctx)}, false);
+}
+
+int BoolSym::get_sizeof() {
+	return sizeof(uint8_t);
+}
+

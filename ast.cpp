@@ -482,6 +482,10 @@ Type ArrLookupNode::get_type() {
 	return type;
 }
 
+llvm::Value *ArrLookupNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):
 	ASTNode(pos, {len}), type(type), len(len) {}
 
@@ -509,6 +513,10 @@ Type PropertyLookupNode::get_type() {
 		return TypeKind::INT;
 	}
 	throw BuildError(Err{pos, "unknown \"" + property_name + "\" property"});
+}
+
+llvm::Value *PropertyLookupNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 PrecondNode::PrecondNode(Position pos, int prob, ASTNode *expr):

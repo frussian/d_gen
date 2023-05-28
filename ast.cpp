@@ -226,7 +226,7 @@ CremType CremNode::map_crem_type(const std::string &type) {
 CharNode::CharNode(Position pos, char ch): ASTNode(pos), ch(ch) {}
 
 CharNode *CharNode::create(Position pos, antlr4::tree::TerminalNode *token) {
-	auto ch = token->getText()[0];
+	auto ch = token->getText()[1];
 	return new CharNode(pos, ch);
 }
 
@@ -236,6 +236,11 @@ Type CharNode::get_type() {
 
 llvm::Value *CharNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
+}
+
+void CharNode::print(std::ostream &out, int offset) {
+	print_spaces(out, offset);
+	out << ch << "(" << (int)ch << ")" << std::endl;
 }
 
 StringNode::StringNode(Position pos, std::string str): ASTNode(pos), str(std::move(str)) {}

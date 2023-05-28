@@ -173,6 +173,8 @@ public:
 	explicit CharNode(Position pos, char ch);
 	static CharNode *create(Position pos, antlr4::tree::TerminalNode *token);
 
+	void print(std::ostream &out, int offset) override;
+
 	Type get_type() override;
 
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;

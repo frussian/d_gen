@@ -12,13 +12,17 @@ namespace llvm {
 	class BasicBlock;
 }
 
+#include <z3++.h>
+
 #include "d_genParser.h"
 
 #include "type.h"
 #include "Symbol.h"
 #include "Position.h"
 
+
 class CodegenVisitor;
+class CodegenZ3Visitor;
 
 class ASTNode {
 protected:
@@ -34,6 +38,7 @@ public:
 	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
 //	virtual llvm::Value *codegen(CodeGenContext *ctx) {return nullptr;};
+	virtual z3::expr gen_expr(CodegenZ3Visitor *visitor);
 	virtual llvm::Value *code_gen(CodegenVisitor *visitor);
 	virtual Type get_type();
 };
@@ -190,6 +195,8 @@ public:
 	Type get_type() override;
 
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 class StringNode: public ASTNode {
@@ -210,6 +217,8 @@ public:
 
 	Type get_type() override;
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 class BoolNode: public ASTNode {
@@ -220,6 +229,7 @@ public:
 
 	Type get_type() override;
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 class IdentNode: public ASTNode {
@@ -232,6 +242,8 @@ public:
 	Type get_type() override;
 
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 enum class BinOpType {
@@ -267,6 +279,8 @@ public:
 	void print(std::ostream &out, int offset) override;
 	Type get_type() override;
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 private:
 	static BinOpType map_op_type(const std::string& op_type);
 	static BinOpGroup get_op_group_args(BinOpType type);
@@ -278,6 +292,13 @@ class ArrLookupNode: public ASTNode {
 public:
 	IdentNode *ident;
 	std::vector<ASTNode*> idxs;
+
+	//z3
+	//for inputs
+	std::vector<int> current_idxs;
+	//for simple variables
+	void *current_ptr;
+
 	explicit ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode *> idxs);
 
 	void print(std::ostream &out, int offset) override;
@@ -285,6 +306,8 @@ public:
 	Type get_type() override;
 
 	llvm::Value *code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 class ArrCreateNode: public ASTNode {

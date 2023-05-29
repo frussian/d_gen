@@ -10,6 +10,8 @@
 
 #define D_GEN_FUNC_NAME "d_gen_func"
 
+#include "CodegenZ3Visitor.h"
+
 CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 	ctx = std::make_unique<llvm::LLVMContext>();
 	mod = std::make_unique<llvm::Module>("test", *ctx);
@@ -21,6 +23,9 @@ CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*ctx, "EntryBlock", d_gen_func);
 	builder = std::make_unique<llvm::IRBuilder<>>(BB);
+
+	z3_visitor = std::make_unique<CodegenZ3Visitor>(ctx.get(), mod.get(),
+													builder.get(), this);
 }
 
 
@@ -233,6 +238,9 @@ llvm::Value *CodegenVisitor::code_gen(ArrCreateNode *node) {
 }
 
 llvm::Value *CodegenVisitor::code_gen(IfNode *node) {
+	if (node->precond) {
+		z3_visitor->prepare_eval_ctx(node->cond, node->precond);
+	}
 	auto cond_value = node->cond->code_gen(this);
 	auto main = mod->getFunction(D_GEN_FUNC_NAME);
 	auto then_bb = llvm::BasicBlock::Create(*ctx, "then", main);

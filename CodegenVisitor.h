@@ -16,6 +16,9 @@
 #include "LLVMCtx.h"
 
 class DGen;
+class CodegenZ3Visitor;
+
+#include "CodegenZ3Visitor.h"
 
 class CodegenVisitor {
 public:
@@ -52,6 +55,7 @@ private:
 	LLVMCtx get_ctx();
 	llvm::Value *get_address(ASTNode *node);
 	FunctionNode *func;
+	std::unique_ptr<CodegenZ3Visitor> z3_visitor;
 };
 
 #endif //D_GEN_CODEGENVISITOR_H

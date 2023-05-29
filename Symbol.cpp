@@ -105,6 +105,16 @@ std::string Symbol::serialize() {
 	return "";
 }
 
+z3::expr Symbol::get_expr(z3::context &ctx) {
+	throw std::runtime_error("get expr on invalid expr");
+}
+
+bool Symbol::has_val() {
+	return false;
+}
+
+void Symbol::fill_val(z3::expr &) {}
+
 extern "C" int32_t num_rand_gen(NumberSym *sym) {
 	if (!sym->num.has_value()) {
 		//todo: use c++ 11 rand lib
@@ -134,23 +144,31 @@ std::string NumberSym::serialize() {
 	return std::to_string(num_rand_gen(this));
 }
 
+bool NumberSym::has_val() {
+	return num.has_value();
+}
+
+z3::expr NumberSym::get_expr(z3::context &ctx) {
+	if (num.has_value()) {
+		return ctx.int_val(*num);
+	}
+	return ctx.int_const(name.c_str());
+}
+
+void NumberSym::fill_val(z3::expr &expr) {
+	num = expr.get_numeral_int();
+}
+
 ArraySym::ArraySym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}
 
 extern "C" void get_val_arr(ArraySym *arr, int *idxs, int len, uint8_t *dest) {
-	int i;
-	for (i = 0; i < len - 1; i++) {
-		auto arr_size = arr->get_size();
-		if (idxs[i] >= arr_size) {
-			throw std::runtime_error("out of bounds");
-		}
-		arr = dynamic_cast<ArraySym*>(arr->arr[idxs[i]].get());
+	std::vector<int> idxs_vec;
+	idxs_vec.reserve(len);
+	for (int i = 0; i < len; i++) {
+		idxs_vec.push_back(idxs[i]);
 	}
 
-	auto arr_size = arr->get_size();
-	if (idxs[i] >= arr_size) {
-		throw std::runtime_error("out of bounds");
-	}
-	auto sym = arr->arr[idxs[i]];
+	auto sym = ArraySym::get_symbol_by_idxs(arr, idxs_vec);
 	fill_dest(sym, dest);
 }
 
@@ -247,6 +265,23 @@ std::string ArraySym::serialize() {
 	return tmp;
 }
 
+std::shared_ptr<Symbol> ArraySym::get_symbol_by_idxs(ArraySym *arr, std::vector<int> &idxs) {
+	int i;
+	for (i = 0; i < idxs.size() - 1; i++) {
+		auto arr_size = arr->get_size();
+		if (idxs[i] >= arr_size) {
+			throw std::runtime_error("out of bounds");
+		}
+		arr = dynamic_cast<ArraySym*>(arr->arr[idxs[i]].get());
+	}
+
+	auto arr_size = arr->get_size();
+	if (idxs[i] >= arr_size) {
+		throw std::runtime_error("out of bounds");
+	}
+	auto sym = arr->arr[idxs[i]];
+}
+
 StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
 	ArraySym(pos, type, std::move(name), is_input) {}
 
@@ -301,6 +336,21 @@ std::string CharSym::serialize() {
 	return std::to_string(c);
 }
 
+bool CharSym::has_val() {
+	return ch.has_value();
+}
+
+z3::expr CharSym::get_expr(z3::context &ctx) {
+	if (ch.has_value()) {
+		return ctx.int_val(*ch);
+	}
+	return ctx.int_const(name.c_str());
+}
+
+void CharSym::fill_val(z3::expr &expr) {
+	ch = expr.get_numeral_int();
+}
+
 extern "C" int8_t bool_rand_gen(BoolSym *sym) {
 	if (!sym->val.has_value()) {
 		//todo: use c++ 11 rand lib
@@ -332,5 +382,20 @@ std::string BoolSym::serialize() {
 		val = "true";
 	}
 	return val;
+}
+
+z3::expr BoolSym::get_expr(z3::context &ctx) {
+	if (val.has_value()) {
+		return ctx.bool_val(*val);
+	}
+	return ctx.bool_const(name.c_str());
+}
+
+bool BoolSym::has_val() {
+	return val.has_value();
+}
+
+void BoolSym::fill_val(z3::expr &expr) {
+	val = expr.is_true();
 }
 

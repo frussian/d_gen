@@ -12,6 +12,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 
+#include <z3++.h>
+
 #include "LLVMCtx.h"
 
 class Symbol {
@@ -21,6 +23,9 @@ public:
 	std::string name;
 	bool is_input = false;
 	llvm::AllocaInst *alloca = nullptr;
+
+	//z3
+	void *addr = nullptr;
 
 	static std::unordered_map<uint8_t*, uint32_t> allocated_vals;
 
@@ -35,6 +40,10 @@ public:
 	virtual int get_sizeof();
 	static llvm::Value *get_ptr(void *ptr, LLVMCtx ctx);
 	virtual std::string serialize();
+
+	virtual z3::expr get_expr(z3::context &ctx);
+	virtual void fill_val(z3::expr &expr);
+	virtual bool has_val();
 protected:
 	explicit Symbol(Position pos, Type type, std::string name, bool is_input = false);
 };
@@ -57,6 +66,7 @@ public:
 	int get_size();
 	std::shared_ptr<Symbol> get_pointed_type_elem();
 	int get_sizeof() override;
+	static std::shared_ptr<Symbol> get_symbol_by_idxs(ArraySym *arr, std::vector<int> &idxs);
 
 	std::string serialize() override;
 
@@ -75,6 +85,12 @@ public:
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
 
 	std::string serialize() override;
+
+	z3::expr get_expr(z3::context &ctx) override;
+
+	void fill_val(z3::expr &expr) override;
+
+	bool has_val() override;
 };
 
 class CharSym: public Symbol {
@@ -89,6 +105,12 @@ public:
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
 
 	std::string serialize() override;
+
+	z3::expr get_expr(z3::context &ctx) override;
+
+	void fill_val(z3::expr &expr) override;
+
+	bool has_val() override;
 };
 
 class BoolSym: public Symbol {
@@ -103,6 +125,12 @@ public:
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
 
 	std::string serialize() override;
+
+	z3::expr get_expr(z3::context &ctx) override;
+
+	void fill_val(z3::expr &expr) override;
+
+	bool has_val() override;
 };
 
 class StringSym: public ArraySym {

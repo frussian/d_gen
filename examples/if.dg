@@ -1,0 +1,7 @@
+int if_test(int i) {
+	[prob = 90;]
+	if i == 2 {
+		return 2
+	}
+	return 1
+}

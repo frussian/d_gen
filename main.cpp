@@ -118,6 +118,8 @@ llvm::orc::ThreadSafeModule createDemoModule() {
 	return llvm::orc::ThreadSafeModule(std::move(M), std::move(Context));
 }
 
+void test_z3();
+
 int main(int argc, char *argv[]) {
 	// Initialize LLVM.
 	llvm::InitializeNativeTarget();
@@ -146,8 +148,9 @@ int main(int argc, char *argv[]) {
 	llvm::outs() << sinSymbol.getAddress() << "\n";
 
 	try {
+		test_z3();
 		std::ifstream stream;
-		stream.open("examples/loops.dg");
+		stream.open("examples/if.dg");
 		if (stream.fail()) {
 			throw "can't read file";
 		}

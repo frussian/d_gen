@@ -8,6 +8,7 @@
 #include "utils/assert.h"
 #include "BuildError.h"
 #include "CodegenVisitor.h"
+#include "CodegenZ3Visitor.h"
 
 #define OFFSET 4
 
@@ -43,6 +44,10 @@ Type ASTNode::get_type() {
 
 llvm::Value *ASTNode::code_gen(CodegenVisitor *visitor) {
 	return nullptr;
+}
+
+z3::expr ASTNode::gen_expr(CodegenZ3Visitor *visitor) {
+	throw std::runtime_error("gen expr on wrong ast node");
 }
 
 FunctionNode::FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
@@ -259,6 +264,10 @@ void CharNode::print(std::ostream &out, int offset) {
 	out << ch << "(" << (int)ch << ")" << std::endl;
 }
 
+z3::expr CharNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
+}
+
 StringNode::StringNode(Position pos, std::string str): ASTNode(pos), str(std::move(str)) {}
 
 Type StringNode::get_type() {
@@ -284,6 +293,10 @@ llvm::Value *NumberNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
 }
 
+z3::expr NumberNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
+}
+
 BoolNode::BoolNode(Position pos, bool val): ASTNode(pos), val(val) {}
 
 BoolNode *BoolNode::create(Position pos, antlr4::tree::TerminalNode *token) {
@@ -303,6 +316,10 @@ llvm::Value *BoolNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
 }
 
+z3::expr BoolNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
+}
+
 IdentNode::IdentNode(Position pos, std::string name): ASTNode(pos), name(std::move(name)) {}
 
 Type IdentNode::get_type() {
@@ -311,6 +328,10 @@ Type IdentNode::get_type() {
 
 llvm::Value *IdentNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
+}
+
+z3::expr IdentNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
 }
 
 BinOpNode::BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs):
@@ -469,6 +490,10 @@ llvm::Value *BinOpNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
 }
 
+z3::expr BinOpNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
+}
+
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode*> idxs):
 		ASTNode(pos), idxs(std::move(idxs)) {
 	ident = new IdentNode(pos, std::move(ident_name));
@@ -500,6 +525,10 @@ Type ArrLookupNode::get_type() {
 
 llvm::Value *ArrLookupNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
+}
+
+z3::expr ArrLookupNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
 }
 
 ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):

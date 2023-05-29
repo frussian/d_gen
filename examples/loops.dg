@@ -4,7 +4,7 @@ int loops(bool b, int n) {
 	for i = 0; i < n; i++ {
 		sum += i
 	}
-	if b {
+	if b && (n > 2 || arr[sum] == 1 ) {
 		return sum
 	}
 	return -1

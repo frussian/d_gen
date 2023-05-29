@@ -22,7 +22,7 @@ public:
 	bool is_input = false;
 	llvm::AllocaInst *alloca = nullptr;
 
-	static std::unordered_map<uint8_t*, uint8_t> allocated_vals;
+	static std::unordered_map<uint8_t*, uint32_t> allocated_vals;
 
 	virtual llvm::Value *code_gen(LLVMCtx ctx);
 
@@ -34,6 +34,7 @@ public:
 
 	virtual int get_sizeof();
 	static llvm::Value *get_ptr(void *ptr, LLVMCtx ctx);
+	virtual std::string serialize();
 protected:
 	explicit Symbol(Position pos, Type type, std::string name, bool is_input = false);
 };
@@ -57,6 +58,8 @@ public:
 	std::shared_ptr<Symbol> get_pointed_type_elem();
 	int get_sizeof() override;
 
+	std::string serialize() override;
+
 	static llvm::FunctionType *get_cb_func_type(llvm::Type *ret_type, llvm::LLVMContext *ctx);
 };
 
@@ -70,6 +73,8 @@ public:
 	int get_sizeof() override;
 
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
+
+	std::string serialize() override;
 };
 
 class CharSym: public Symbol {
@@ -82,6 +87,8 @@ public:
 	int get_sizeof() override;
 
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
+
+	std::string serialize() override;
 };
 
 class BoolSym: public Symbol {
@@ -94,12 +101,15 @@ public:
 	int get_sizeof() override;
 
 	static llvm::FunctionType *get_cb_func_type(llvm::LLVMContext *ctx);
+
+	std::string serialize() override;
 };
 
 class StringSym: public ArraySym {
 public:
 	explicit StringSym(Position pos, Type type, std::string name, bool is_input = false);
 	//todo: override generation of json value
+	std::string serialize() override;
 };
 
 

@@ -15,9 +15,11 @@
 #include "ast.h"
 #include "LLVMCtx.h"
 
+class DGen;
+
 class CodegenVisitor {
 public:
-	explicit CodegenVisitor();
+	explicit CodegenVisitor(DGen *d_gen);
 	llvm::Value *code_gen(FunctionNode *func);
 	llvm::Value *code_gen(BodyNode *body);
 	llvm::Value *code_gen(BoolNode *node);
@@ -42,14 +44,14 @@ public:
 	bool is_last_stmt_br(BodyNode *node);
 
 	llvm::orc::ThreadSafeModule get_module();
-
-	llvm::Value *code_gen();
+	DGen *d_gen;
 private:
 	std::unique_ptr<llvm::LLVMContext> ctx;
 	std::unique_ptr<llvm::Module> mod;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	LLVMCtx get_ctx();
 	llvm::Value *get_address(ASTNode *node);
+	FunctionNode *func;
 };
 
 #endif //D_GEN_CODEGENVISITOR_H

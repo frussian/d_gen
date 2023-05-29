@@ -1,6 +1,6 @@
 int simple(int i, string str, string[] str_arr_arg) {
 	int j = str.len
-	char ret_char = str[182]
+	char ret_char = str[j-2]
 	string new_str = "new str!"
 	string[] str_arr = string[2]
 	str_arr[0] = "first str"

@@ -15,7 +15,7 @@ public:
 	explicit Semantics(FunctionNode *func);
 	void eliminate_unreachable_code();
 	void connect_loops();
-	void type_ast();
+	std::vector<std::shared_ptr<Symbol>> type_ast();
 	void type_check();
 private:
 	FunctionNode *func;

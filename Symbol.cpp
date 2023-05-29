@@ -29,7 +29,7 @@ static void fill_dest(std::shared_ptr<Symbol> sym, uint8_t *dest) {
 	}
 }
 
-std::unordered_map<uint8_t*, uint8_t> Symbol::allocated_vals;
+std::unordered_map<uint8_t*, uint32_t> Symbol::allocated_vals;
 
 Symbol::Symbol(Position pos, Type type, std::string name, bool is_input):
 	pos(pos), type(type), name(std::move(name)), is_input(is_input) {}
@@ -101,6 +101,10 @@ int Symbol::get_sizeof() {
 	return 0;
 }
 
+std::string Symbol::serialize() {
+	return "";
+}
+
 extern "C" int32_t num_rand_gen(NumberSym *sym) {
 	if (!sym->num.has_value()) {
 		//todo: use c++ 11 rand lib
@@ -124,6 +128,10 @@ NumberSym::NumberSym(Position pos, Type type, std::string name, bool is_input): 
 
 int NumberSym::get_sizeof() {
 	return sizeof(uint32_t);
+}
+
+std::string NumberSym::serialize() {
+	return std::to_string(num_rand_gen(this));
 }
 
 ArraySym::ArraySym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}
@@ -176,7 +184,8 @@ llvm::FunctionType *ArraySym::get_cb_func_type(llvm::Type *ret_type, llvm::LLVMC
 
 int ArraySym::get_size() {
 	if (!inited_size.has_value()) {
-		inited_size = std::rand() % 200;
+		//TODO: change modulo
+		inited_size = std::abs(std::rand() % 10);
 		arr.reserve(*inited_size);
 		for (int i = 0; i < *inited_size; i++) {
 			arr.push_back(get_pointed_type_elem());
@@ -188,7 +197,7 @@ int ArraySym::get_size() {
 
 std::shared_ptr<Symbol> ArraySym::get_pointed_type_elem() {
 	auto pointed_type = type.dropType();
-	return create_symbol(pos, pointed_type, name+"_deref", true);
+	return create_symbol(pos, pointed_type, "", true);
 }
 
 int ArraySym::get_sizeof() {
@@ -224,16 +233,49 @@ llvm::Value *ArraySym::code_gen_idx(std::vector<llvm::Value *> &idx, LLVMCtx ctx
 	return ctx.builder->CreateLoad(dest_val->getAllocatedType(), dest_val);
 }
 
-//TODO: change passed type to []char
+std::string ArraySym::serialize() {
+	std::string tmp = "[";
+
+	//force to generate array
+	get_size();
+
+	for (auto &sym: arr) {
+		tmp += sym->serialize() + ",";
+	}
+	tmp[tmp.size()-1] = ']';
+
+	return tmp;
+}
+
 StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
 	ArraySym(pos, type, std::move(name), is_input) {}
+
+std::string StringSym::serialize() {
+	std::string tmp;
+
+	tmp += "\"";
+
+	//to force generation of arr
+	get_size();
+
+	for (auto &el: arr) {
+		auto char_sym = std::dynamic_pointer_cast<CharSym>(el);
+		//TODO: escape char for json format
+		tmp += char_rand_gen(char_sym.get());
+	}
+
+	tmp += "\"";
+	return tmp;
+}
 
 extern "C" int8_t char_rand_gen(CharSym *sym) {
 	if (!sym->ch.has_value()) {
 		//todo: use c++ 11 rand lib
-		sym->ch = std::rand() % 256;
+		//generating chars from 32 to 126
+		int r = std::abs(std::rand() % 94);
+		sym->ch = 32 + r;
 	}
-	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
+//	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
 	return *sym->ch;
 }
 
@@ -253,10 +295,16 @@ int CharSym::get_sizeof() {
 	return sizeof(uint8_t);
 }
 
+std::string CharSym::serialize() {
+	char c = char_rand_gen(this);
+
+	return std::to_string(c);
+}
+
 extern "C" int8_t bool_rand_gen(BoolSym *sym) {
 	if (!sym->val.has_value()) {
 		//todo: use c++ 11 rand lib
-		sym->val = std::rand() % 2;
+		sym->val = std::abs(std::rand() % 2);
 	}
 	std::cout << "get bool " << *sym->val << std::endl;
 	return (int8_t)*sym->val;
@@ -276,5 +324,13 @@ llvm::FunctionType *BoolSym::get_cb_func_type(llvm::LLVMContext *ctx) {
 
 int BoolSym::get_sizeof() {
 	return sizeof(uint8_t);
+}
+
+std::string BoolSym::serialize() {
+	std::string val = "false";
+	if (bool_rand_gen(this)) {
+		val = "true";
+	}
+	return val;
 }
 

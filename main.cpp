@@ -9,6 +9,7 @@
 
 #include "BuildError.h"
 #include "DGenJIT.h"
+#include "DGen.h"
 #include <memory>
 
 #include <stdexcept>
@@ -117,8 +118,6 @@ llvm::orc::ThreadSafeModule createDemoModule() {
 	return llvm::orc::ThreadSafeModule(std::move(M), std::move(Context));
 }
 
-void antlr_test();
-
 int main(int argc, char *argv[]) {
 	// Initialize LLVM.
 	llvm::InitializeNativeTarget();
@@ -145,8 +144,16 @@ int main(int argc, char *argv[]) {
 	auto sinSymbol = ExitOnErr(J->lookup("printd"));
 	ExitOnErr(J->lookup("cb_fn"));
 	llvm::outs() << sinSymbol.getAddress() << "\n";
+
 	try {
-		antlr_test();
+		std::ifstream stream;
+		stream.open("examples/loops.dg");
+		if (stream.fail()) {
+			throw "can't read file";
+		}
+
+		DGen d_gen(stream);
+		std::string json = d_gen.generate_json();
 	} catch (const BuildError &err) {
 		std::cout << "errors" << std::endl;
 		for (const auto &e: err.errors) {

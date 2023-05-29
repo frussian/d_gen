@@ -61,12 +61,18 @@ void Semantics::connect_loops_visit_body(BodyNode *body, ForNode *loop) {
 	}
 }
 
-void Semantics::type_ast() {
+std::vector<std::shared_ptr<Symbol>> Semantics::type_ast() {
 	auto *s_table = new SymbolTable;
+	std::vector<std::shared_ptr<Symbol>> inputs;
 	for (const auto &arg: func->args) {
-		s_table->add_symbol(arg->name, Symbol::create_symbol(arg->pos, arg->type, arg->name, true));
+		auto in_sym = Symbol::create_symbol(arg->pos, arg->type, arg->name, true);
+		inputs.push_back(in_sym);
+		s_table->add_symbol(arg->name, in_sym);
 	}
+
 	func->body->visitChildren(&type_visitor, s_table);
+
+	return std::move(inputs);
 }
 
 bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
@@ -170,6 +176,9 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 }
 
 void Semantics::type_check_precondition(PrecondNode *pre_cond) {
+	if (!pre_cond->expr) {
+		return;
+	}
 	auto t = pre_cond->expr->get_type();
 	if (t != TypeKind::BOOL) {
 		throw BuildError(Err{pre_cond->pos, "precondition must be evaluated to bool"});

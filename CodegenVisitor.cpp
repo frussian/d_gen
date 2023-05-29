@@ -6,9 +6,11 @@
 
 #include "CodegenVisitor.h"
 
+#include "DGen.h"
+
 #define D_GEN_FUNC_NAME "d_gen_func"
 
-CodegenVisitor::CodegenVisitor() {
+CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 	ctx = std::make_unique<llvm::LLVMContext>();
 	mod = std::make_unique<llvm::Module>("test", *ctx);
 
@@ -23,6 +25,7 @@ CodegenVisitor::CodegenVisitor() {
 
 
 llvm::Value *CodegenVisitor::code_gen(FunctionNode *func) {
+	this->func = func;
 	code_gen(func->body);
 	return nullptr;
 }
@@ -45,6 +48,7 @@ llvm::Value *CodegenVisitor::code_gen(NumberNode *node) {
 }
 
 llvm::Value *CodegenVisitor::code_gen(StringNode *node) {
+	//TODO: need to store this pointer in allocated_vals
 	return builder->CreateGlobalStringPtr(node->str);
 }
 
@@ -110,23 +114,23 @@ LLVMCtx CodegenVisitor::get_ctx() {
 	return {ctx.get(), mod.get(), builder.get()};
 }
 
-//todo: pass pointer as res
-extern "C" void gather_res(CodegenVisitor *visitor, int32_t res) {
-//	todo: check func ret type here visitor->func->type
-	std::cout << "func returned " << res << std::endl;
+extern "C" void gather_res(CodegenVisitor *visitor, void *res) {
+	visitor->d_gen->gather_res(res);
 }
 
 llvm::Value *CodegenVisitor::code_gen(ReturnNode *node) {
 	//TODO: call function to process the result
+	auto res_ptr = builder->CreateAlloca(Symbol::map_type_to_llvm_type(func->ret_type, get_ctx()));
 	auto res = node->expr->code_gen(this);
+	builder->CreateStore(res, res_ptr);
 
 	auto gather_res_t = llvm::FunctionType::get(llvm::Type::getVoidTy(*ctx),
-												{llvm::Type::getInt32PtrTy(*ctx),
-												 llvm::Type::getInt32Ty(*ctx)}, false);
+												{llvm::Type::getInt8PtrTy(*ctx),
+												 llvm::Type::getVoidTy(*ctx)}, false);
 
 	auto gather_res_cb = mod->getOrInsertFunction("gather_res", gather_res_t);
 
-	builder->CreateCall(gather_res_cb, {Symbol::get_ptr(this, get_ctx()), res});
+	builder->CreateCall(gather_res_cb, {Symbol::get_ptr(this, get_ctx()), res_ptr});
 	return builder->CreateRetVoid();
 }
 
@@ -205,9 +209,14 @@ llvm::Value *CodegenVisitor::code_gen(PropertyLookupNode *node) {
 	return builder->CreateCall(property_cb, {Symbol::get_ptr(node, get_ctx()), data_ptr});
 }
 
-extern "C" uint8_t *create_arr(uint32_t size) {
-	auto *data = static_cast<uint8_t *>(malloc(size));
-	Symbol::allocated_vals[data] = size;
+extern "C" uint8_t *create_arr(int32_t len, uint32_t pointed_sizeof) {
+	if (len < 0) {
+		throw std::runtime_error("create array with len < 0: " + std::to_string(len));
+	}
+	std::cout << "create arr instr with len " << len << " and sizeof" <<
+		pointed_sizeof << std::endl;
+	auto *data = static_cast<uint8_t *>(malloc(len * pointed_sizeof));
+	Symbol::allocated_vals[data] = len;
 	return data;
 }
 
@@ -215,12 +224,12 @@ llvm::Value *CodegenVisitor::code_gen(ArrCreateNode *node) {
 	auto pointed_sizeof = Symbol::create_symbol(Position(0, 0), node->type.dropType(), "tmp")->get_sizeof();
 
 	auto create_arr_t = llvm::FunctionType::get(Symbol::map_type_to_llvm_type(node->type, get_ctx()),
-												 {llvm::Type::getInt32Ty(*ctx)}, false);
-	auto size = builder->CreateMul(builder->getInt32(pointed_sizeof), node->len->code_gen(this));
+												 {llvm::Type::getInt32Ty(*ctx),
+												  llvm::Type::getInt32Ty(*ctx)}, false);
 
 	auto create_arr_cb = mod->getOrInsertFunction("create_arr", create_arr_t);
 
-	return builder->CreateCall(create_arr_cb, {size}, "created_arr_ptr");
+	return builder->CreateCall(create_arr_cb, {node->len->code_gen(this), builder->getInt32(pointed_sizeof)}, "created_arr_ptr");
 }
 
 llvm::Value *CodegenVisitor::code_gen(IfNode *node) {

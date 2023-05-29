@@ -1,0 +1,12 @@
+int loops(bool b, int n) {
+	int i
+	int sum = 0
+	for i = 0; i < n; i++ {
+		sum += i
+		break
+	}
+	if b {
+		return sum
+	}
+	return -1
+}

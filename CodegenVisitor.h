@@ -34,6 +34,13 @@ public:
 	llvm::Value *code_gen(PropertyLookupNode *node);
 	llvm::Value *code_gen(ArrCreateNode *node);
 
+	llvm::Value *code_gen(IfNode *node);
+	llvm::Value *code_gen(ForNode *node);
+	llvm::Value *code_gen(ContinueNode *node);
+	llvm::Value *code_gen(BreakNode *node);
+
+	bool is_last_stmt_br(BodyNode *node);
+
 	llvm::orc::ThreadSafeModule get_module();
 
 	llvm::Value *code_gen();

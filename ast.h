@@ -9,6 +9,7 @@
 
 namespace llvm {
 	class Value;
+	class BasicBlock;
 }
 
 #include "d_genParser.h"
@@ -78,6 +79,8 @@ public:
 	explicit IfNode(Position pos, PrecondNode *precond, ASTNode *cond, BodyNode *body, BodyNode *else_body);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class AsgNode;
@@ -88,10 +91,16 @@ public:
 	ASTNode *cond;
 	AsgNode *inc_asg;
 	BodyNode *body;
+
+	llvm::BasicBlock *loop_cond_bb;
+	llvm::BasicBlock *merge_bb;
+
 	explicit ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 					 ASTNode *inc_asg, BodyNode *body);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class DefNode: public ASTNode {
@@ -113,6 +122,8 @@ public:
 	explicit ContinueNode(Position pos);
 
 	void print(std::ostream &out, int offset) override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class BreakNode: public ASTNode {
@@ -121,6 +132,7 @@ public:
 	explicit BreakNode(Position pos);
 
 	void print(std::ostream &out, int offset) override;
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class ReturnNode: public ASTNode {

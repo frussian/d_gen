@@ -8,6 +8,13 @@ int simple(int i, string str, string[] str_arr_arg) {
 
 	char rand_char = str_arr_arg[0][1]
 	string rand_str = str_arr_arg[0]
-	return rand_str.len
+	int ret_val
+	if rand_str.len < 0 {
+		ret_val = 1
+		return ret_val
+	} else {
+		ret_val = 3
+	}
+	return ret_val
 	return str_arr[0][6] + 0
 }

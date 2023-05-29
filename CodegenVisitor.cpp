@@ -6,6 +6,8 @@
 
 #include "CodegenVisitor.h"
 
+#define D_GEN_FUNC_NAME "d_gen_func"
+
 CodegenVisitor::CodegenVisitor() {
 	ctx = std::make_unique<llvm::LLVMContext>();
 	mod = std::make_unique<llvm::Module>("test", *ctx);
@@ -13,7 +15,7 @@ CodegenVisitor::CodegenVisitor() {
 	llvm::Function *d_gen_func =
 			llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(*ctx),
 														   {}, false),
-								   llvm::Function::ExternalLinkage, "d_gen_func", mod.get());
+								   llvm::Function::ExternalLinkage, D_GEN_FUNC_NAME, mod.get());
 
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*ctx, "EntryBlock", d_gen_func);
 	builder = std::make_unique<llvm::IRBuilder<>>(BB);
@@ -219,4 +221,97 @@ llvm::Value *CodegenVisitor::code_gen(ArrCreateNode *node) {
 	auto create_arr_cb = mod->getOrInsertFunction("create_arr", create_arr_t);
 
 	return builder->CreateCall(create_arr_cb, {size}, "created_arr_ptr");
+}
+
+llvm::Value *CodegenVisitor::code_gen(IfNode *node) {
+	auto cond_value = node->cond->code_gen(this);
+	auto main = mod->getFunction(D_GEN_FUNC_NAME);
+	auto then_bb = llvm::BasicBlock::Create(*ctx, "then", main);
+	auto else_bb = llvm::BasicBlock::Create(*ctx, "else", main);
+	auto merge_bb = llvm::BasicBlock::Create(*ctx, "merge", main);
+
+	builder->CreateCondBr(cond_value, then_bb, else_bb);
+	builder->SetInsertPoint(then_bb);
+	code_gen(node->body);
+	if (!is_last_stmt_br(node->body)) {
+		builder->CreateBr(merge_bb);
+	}
+
+	builder->SetInsertPoint(else_bb);
+	if (node->else_body) {
+		code_gen(node->else_body);
+		if (!is_last_stmt_br(node->else_body)) {
+			builder->CreateBr(merge_bb);
+		}
+	} else {
+		builder->CreateBr(merge_bb);
+	}
+
+	builder->SetInsertPoint(merge_bb);
+
+	return nullptr;
+}
+
+bool CodegenVisitor::is_last_stmt_br(BodyNode *node) {
+	if (node->stmts.empty()) {
+		return false;
+	}
+	auto stmt = *(--node->stmts.end());
+	if (dynamic_cast<ContinueNode*>(stmt) || dynamic_cast<BreakNode*>(stmt) ||
+		dynamic_cast<ReturnNode*>(stmt)) {
+		return true;
+	} else if (auto if_node = dynamic_cast<IfNode*>(stmt)) {
+		auto then_has_br = is_last_stmt_br(if_node->body);
+		auto else_has_br = false;
+		if (if_node->else_body) {
+			else_has_br = is_last_stmt_br(if_node->else_body);
+		}
+
+		if (then_has_br && else_has_br) {
+			return true;
+		}
+	}//todo: also check for
+	return false;
+}
+
+llvm::Value *CodegenVisitor::code_gen(ForNode *node) {
+	if (node->pre_asg) {
+		code_gen(node->pre_asg);
+	}
+
+	auto main = mod->getFunction(D_GEN_FUNC_NAME);
+	auto loop_cond_bb = llvm::BasicBlock::Create(*ctx, "loop_cond_bb", main);
+	auto loop_bb = llvm::BasicBlock::Create(*ctx, "loop_bb", main);
+	auto merge_bb = llvm::BasicBlock::Create(*ctx, "merge_bb", main);
+
+	node->loop_cond_bb = loop_cond_bb;
+	node->merge_bb = merge_bb;
+
+	builder->CreateBr(loop_cond_bb);
+
+	builder->SetInsertPoint(loop_cond_bb);
+	builder->CreateCondBr(node->cond->code_gen(this), loop_bb, merge_bb);
+
+	builder->SetInsertPoint(loop_bb);
+	code_gen(node->body);
+	if (!is_last_stmt_br(node->body)) {
+		if (node->inc_asg) {
+			code_gen(node->inc_asg);
+		}
+		builder->CreateBr(loop_cond_bb);
+	}
+
+	builder->SetInsertPoint(merge_bb);
+
+	return nullptr;
+}
+
+llvm::Value *CodegenVisitor::code_gen(ContinueNode *node) {
+	builder->CreateBr(node->loop->loop_cond_bb);
+	return nullptr;
+}
+
+llvm::Value *CodegenVisitor::code_gen(BreakNode *node) {
+	builder->CreateBr(node->loop->merge_bb);
+	return nullptr;
 }

@@ -93,6 +93,10 @@ void IfNode::print(std::ostream &out, int offset) {
 	}
 }
 
+llvm::Value *IfNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 ForNode::ForNode(Position pos, PrecondNode *precond, ASTNode *pre_asg, ASTNode *cond,
 				 ASTNode *inc_asg, BodyNode *body):
 	ASTNode(pos, {precond, pre_asg, cond, inc_asg, body}), precond(precond),
@@ -104,6 +108,10 @@ void ForNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
 	out << "ForNode:" << std::endl;
 	body->print(out, offset + OFFSET);
+}
+
+llvm::Value *ForNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 DefNode::DefNode(Position pos, std::string name, Type type, ASTNode *rhs):
@@ -132,11 +140,19 @@ void ContinueNode::print(std::ostream &out, int offset) {
 	out << "ContinueNode" << std::endl;
 }
 
+llvm::Value *ContinueNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 BreakNode::BreakNode(Position pos): ASTNode(pos) {}
 
 void BreakNode::print(std::ostream &out, int offset) {
 	print_spaces(out, offset);
 	out << "BreakNode" << std::endl;
+}
+
+llvm::Value *BreakNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
 }
 
 ReturnNode::ReturnNode(Position pos, ASTNode *expr): ASTNode(pos, {expr}), expr(expr) {}

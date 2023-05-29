@@ -13,7 +13,7 @@
 
 void antlr_test() {
 	std::ifstream stream;
-	stream.open("examples/simple.dg");
+	stream.open("examples/loops.dg");
 	if (stream.fail()) {
 		throw "can't read file";
 	}
@@ -25,6 +25,8 @@ void antlr_test() {
 	sem.type_ast();
 	sem.type_check();
 	sem.eliminate_unreachable_code();
+
+	std::srand(time(nullptr));
 
 	CodegenVisitor visitor;
 	visitor.code_gen(func);

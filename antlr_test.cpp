@@ -19,7 +19,7 @@ void antlr_test() {
 	}
 	auto builder = std::make_unique<ASTBuilderVisitor>(stream);
 	auto func = builder->parse();
-	func->print(std::cout, 0);
+//	func->print(std::cout, 0);
 	Semantics sem(func);
 	sem.connect_loops();
 	sem.type_ast();

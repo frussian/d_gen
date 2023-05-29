@@ -499,6 +499,10 @@ Type ArrCreateNode::get_type() {
 	return type;
 }
 
+llvm::Value *ArrCreateNode::code_gen(CodegenVisitor *visitor) {
+	return visitor->code_gen(this);
+}
+
 PropertyLookupNode::PropertyLookupNode(Position pos, std::string ident_name, std::string property_name):
 		ASTNode(pos), property_name(std::move(property_name)) {
 	ident = new IdentNode(pos, std::move(ident_name));

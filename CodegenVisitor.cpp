@@ -144,15 +144,16 @@ llvm::Value *CodegenVisitor::get_address(ASTNode *node) {
 	if (auto ident = dynamic_cast<IdentNode*>(node)) {
 		return ident->symbol->alloca;
 	} else if (auto lookup = dynamic_cast<ArrLookupNode*>(node)) {
-		std::vector<llvm::Value*> idxs;
-		idxs.reserve(lookup->idxs.size());
-		for (const auto &idx: lookup->idxs) {
-			idxs.push_back(idx->code_gen(this));
+		auto sym = lookup->ident->symbol;
+		llvm::Value *addr = sym->alloca;
+
+		for (auto &idx: lookup->idxs) {
+			auto ptr = builder->CreateLoad(addr->getType()->getPointerElementType(), addr);
+			addr = builder->CreateGEP(ptr->getType()->getPointerElementType(),
+									  ptr, idx->code_gen(this));
 		}
 
-		auto sym = lookup->ident->symbol;
-		auto base_type = Symbol::map_type_to_llvm_type(sym->type.dropType(), get_ctx());
-		return builder->CreateGEP(base_type, sym->alloca, idxs);
+		return addr;
 	}
 
 	ASSERT(false, "expected ident or array lookup node on the left side");
@@ -196,7 +197,7 @@ llvm::Value *CodegenVisitor::code_gen(PropertyLookupNode *node) {
 
 	llvm::Value *data_ptr = Symbol::get_ptr(nullptr, get_ctx());
 	if (!sym->is_input) {
-		data_ptr = sym->alloca;
+		data_ptr = builder->CreateLoad(sym->alloca->getAllocatedType(), sym->alloca);
 	}
 
 	return builder->CreateCall(property_cb, {Symbol::get_ptr(node, get_ctx()), data_ptr});

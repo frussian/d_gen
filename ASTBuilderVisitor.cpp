@@ -299,7 +299,8 @@ std::any ASTBuilderVisitor::visitConst(d_genParser::ConstContext *ctx) {
 	if (auto char_token = ctx->CHAR()) {
 		constNode = CharNode::create(pos, char_token);
 	} else if (auto token = ctx->STRING()) {
-		constNode = new StringNode(pos, token->getText());
+		auto text = token->getText();
+		constNode = new StringNode(pos, text.substr(1, text.size()-2));
 	} else if (auto num_token = ctx->NUM()) {
 		constNode = NumberNode::create(pos, num_token);
 	} else if (auto bool_token = ctx->BOOL()) {

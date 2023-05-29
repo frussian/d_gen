@@ -1,6 +1,13 @@
-int simple(int i, string str) {
+int simple(int i, string str, string[] str_arr_arg) {
 	int j = str.len
 	char ret_char = str[182]
+	string new_str = "new str!"
+	string[] str_arr = string[2]
+	str_arr[0] = "first str"
+	str_arr[1] = "second str"
 
-	return str[15] + 0
+	char rand_char = str_arr_arg[0][1]
+	string rand_str = str_arr_arg[0]
+	return rand_str.len
+	return str_arr[0][6] + 0
 }

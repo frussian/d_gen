@@ -99,7 +99,7 @@ bool Type::operator==(const Type &rhs) const {
 	if (length() != rhs.length()) {
 		return false;
 	}
-	for (int i = 0; i < types->size(); i++) {
+	for (int i = 0; i < length(); i++) {
 		if (types->at(i + pos) != rhs.types->at(i + rhs.pos)) {
 			return false;
 		}

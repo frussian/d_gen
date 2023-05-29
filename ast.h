@@ -147,7 +147,7 @@ public:
 	ASTNode *rhs;
 	explicit AsgNode(Position pos, ASTNode *lhs, ASTNode *rhs);
 	static AsgNode *create(Position pos, ASTNode *lhs, const std::string &type, ASTNode *rhs);
-	llvm::Value *code_gen(CodegenVisitor *visitor);
+	llvm::Value *code_gen(CodegenVisitor *visitor) override;
 private:
 	static AsgType map_asg_type(const std::string &type);
 
@@ -283,6 +283,8 @@ public:
 	static ArrCreateNode *create(Position pos, Type type, ASTNode *len);
 
 	Type get_type() override;
+
+	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 };
 
 class PropertyLookupNode: public ASTNode {

@@ -138,10 +138,10 @@ bool CodegenZ3Visitor::traverse_ast_cb(ASTNode *node, std::any ctx) {
 }
 
 void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
-	//TODO: clear z3_ctx, names_to_symbs, etc
 	syms_to_expr_id.clear();
     exprs = z3::expr_vector(z3_ctx);
 	auto cond_expr = cond->gen_expr(this);
+    //TODO: if exprs.empty() then return (no unknown variables)
 	z3::solver solver(z3_ctx);
 	if (pre_cond->prob != 1) {
 		auto r = std::abs(std::rand() % 100);

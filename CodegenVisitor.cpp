@@ -307,6 +307,9 @@ llvm::Value *CodegenVisitor::code_gen(ForNode *node) {
 	builder->CreateBr(loop_cond_bb);
 
 	builder->SetInsertPoint(loop_cond_bb);
+	if (node->precond) {
+		z3_visitor->prepare_eval_ctx(node->cond, node->precond);
+	}
 	builder->CreateCondBr(node->cond->code_gen(this), loop_bb, merge_bb);
 
 	builder->SetInsertPoint(loop_bb);

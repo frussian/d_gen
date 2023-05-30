@@ -45,8 +45,8 @@ private:
 	CodegenVisitor *cg_vis;
 
 	z3::context z3_ctx;
-	std::unordered_map<std::string, Symbol*> names_to_syms;
-
+	std::unordered_map<Symbol*, int> syms_to_expr_id;
+    z3::expr_vector exprs;
 	void start_z3_gen(ASTNode *cond, PrecondNode *pre_cond);
 
 	z3::expr get_expr_from_void(void *ptr, Type type);

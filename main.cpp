@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 	try {
 		test_z3();
 		std::ifstream stream;
-		stream.open("examples/if.dg");
+		stream.open("examples/prefix_func.dg");
 		if (stream.fail()) {
 			throw "can't read file";
 		}

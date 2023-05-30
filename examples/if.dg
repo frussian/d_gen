@@ -1,6 +1,6 @@
-int if_test(int i) {
-	[prob = 90;]
-	if i == 2 {
+int if_test(int i, string s) {
+	[prob = 50;]
+	if i == 2 && s[1] == 'b' {
 		return 2
 	}
 	return 1

@@ -120,7 +120,6 @@ extern "C" int32_t num_rand_gen(NumberSym *sym) {
 		//todo: use c++ 11 rand lib
 		sym->num = std::rand() % 200;
 	}
-	std::cout << "get num " << *sym->num << std::endl;
 	return *sym->num;
 }
 
@@ -209,7 +208,7 @@ int ArraySym::get_size() {
 			arr.push_back(get_pointed_type_elem());
 		}
 	}
-	std::cout << "get size " << *inited_size << std::endl;
+//	std::cout << "get size " << *inited_size << std::endl;
 	return *inited_size;
 }
 
@@ -279,7 +278,7 @@ std::shared_ptr<Symbol> ArraySym::get_symbol_by_idxs(ArraySym *arr, std::vector<
 	if (idxs[i] >= arr_size) {
 		throw std::runtime_error("out of bounds");
 	}
-	auto sym = arr->arr[idxs[i]];
+	return arr->arr[idxs[i]];
 }
 
 StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
@@ -356,7 +355,7 @@ extern "C" int8_t bool_rand_gen(BoolSym *sym) {
 		//todo: use c++ 11 rand lib
 		sym->val = std::abs(std::rand() % 2);
 	}
-	std::cout << "get bool " << *sym->val << std::endl;
+//	std::cout << "get bool " << *sym->val << std::endl;
 	return (int8_t)*sym->val;
 }
 

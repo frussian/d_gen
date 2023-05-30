@@ -12,7 +12,8 @@ CodegenZ3Visitor::CodegenZ3Visitor(llvm::LLVMContext *ctx,
 								   ctx(ctx),
 								   mod(mod),
 								   builder(builder),
-								   cg_vis(cg_vis) {
+								   cg_vis(cg_vis),
+                                   exprs(z3_ctx) {
 
 }
 
@@ -116,7 +117,7 @@ llvm::Value *CodegenZ3Visitor::prepare_eval_ctx(ArrLookupNode *node) {
 
 	auto idx_cb = mod->getOrInsertFunction("upd_arr_idxs", idx_cb_t);
 
-	return builder->CreateCall(idx_cb, {Symbol::get_ptr(this, get_ctx()),
+	return builder->CreateCall(idx_cb, {Symbol::get_ptr(node, get_ctx()),
 										var_arr,
 										builder->getInt32(idxs.size())});
 }
@@ -138,16 +139,30 @@ bool CodegenZ3Visitor::traverse_ast_cb(ASTNode *node, std::any ctx) {
 
 void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	//TODO: clear z3_ctx, names_to_symbs, etc
-	names_to_syms.clear();
+	syms_to_expr_id.clear();
+    exprs = z3::expr_vector(z3_ctx);
 	auto cond_expr = cond->gen_expr(this);
 	z3::solver solver(z3_ctx);
 	if (pre_cond->prob != 1) {
 		auto r = std::abs(std::rand() % 100);
 		if (r > pre_cond->prob) {
+			std::cout << "decided to negate, recv " << r << " prob" << std::endl;
 			cond_expr = !cond_expr;
 		}
 	}
 	solver.add(cond_expr);
+    for (const auto &item: syms_to_expr_id) {
+        auto sym = item.first;
+        if (dynamic_cast<CharSym*>(sym)) {
+            //TODO: this should be a part of precond->cond
+            auto expr_idx = item.second;
+            auto expr = exprs[expr_idx];
+            solver.add(97 <= expr && expr <= 122);
+        }
+    }
+
+	std::cout << "err: " << solver.check_error() << std::endl;
+	std::cout << "solver " << solver << std::endl;
 
 	auto res = solver.check();
 	if (res != z3::sat) {
@@ -158,13 +173,13 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	std::cout << "satisfiability checked successfully" << std::endl;
 
 	auto model = solver.get_model();
-	for (int j = 0; j < model.size(); j++) {
-		auto val = model[j];
-		auto sym = names_to_syms[val.name().str()];
-		auto expr = model.get_const_interp(val);
-		sym->fill_val(expr);
-		std::cout << "found const " << val.name() << " " <<
-			model.get_const_interp(val) << std::endl;
+	std::cout << "model " << model.to_string() << std::endl;
+	for (const auto &item: syms_to_expr_id) {
+		auto sym = item.first;
+		auto expr_idx = item.second;
+        auto expr = exprs[expr_idx];
+        auto eval = model.eval(expr, true);
+		sym->fill_val(eval);
 	}
 }
 
@@ -183,10 +198,12 @@ z3::expr CodegenZ3Visitor::gen_expr(NumberNode *node) {
 z3::expr CodegenZ3Visitor::gen_expr(IdentNode *node) {
 	auto sym = node->symbol;
 	if (sym->is_input) {
+		auto expr = sym->get_expr(z3_ctx);
 		if (!sym->has_val()) {
-			names_to_syms[sym->name] = sym.get();
+            syms_to_expr_id[sym.get()] = exprs.size();
+            exprs.push_back(expr);
 		}
-		return sym->get_expr(z3_ctx);
+		return expr;
 	}
 
 	return get_expr_from_void(sym->addr, sym->type);
@@ -201,11 +218,13 @@ z3::expr CodegenZ3Visitor::gen_expr(ArrLookupNode *node) {
 		for (auto &e: node->current_idxs) {
 			idx_str += std::to_string(e) + "_";
 		}
-		if (!sym->has_val()) {
-			names_to_syms[idx_str] = sym.get();
+		indexed_sym->name = idx_str;
+		auto expr = indexed_sym->get_expr(z3_ctx);
+		if (!indexed_sym->has_val()) {
+            syms_to_expr_id[indexed_sym.get()] = exprs.size();
+            exprs.push_back(expr);
 		}
-		sym->name = idx_str;
-		return sym->get_expr(z3_ctx);
+		return expr;
 	}
 
 	return get_expr_from_void(node->current_ptr, node->get_type());

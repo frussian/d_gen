@@ -92,7 +92,6 @@ std::string gather_rec(void *res, Type type) {
 	return "";
 }
 
-//todo: check func ret type here visitor->func->type
 void DGen::gather_res(void *res) {
 	std::cout << "test data:" << std::endl;
 

@@ -149,6 +149,8 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 			std::cout << "decided to negate, recv " << r << " prob" << std::endl;
 			cond_expr = !cond_expr;
 		}
+	} else {
+		//todo: other method based on coverage
 	}
 	solver.add(cond_expr);
     for (const auto &item: syms_to_expr_id) {

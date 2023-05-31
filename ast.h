@@ -37,7 +37,6 @@ public:
 	void print_spaces(std::ostream &out, int offset);
 	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
-//	virtual llvm::Value *codegen(CodeGenContext *ctx) {return nullptr;};
 	virtual z3::expr gen_expr(CodegenZ3Visitor *visitor);
 	virtual llvm::Value *code_gen(CodegenVisitor *visitor);
 	virtual Type get_type();

@@ -175,7 +175,7 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	std::cout << "satisfiability checked successfully" << std::endl;
 
 	auto model = solver.get_model();
-	std::cout << "model " << model.to_string() << std::endl;
+	// std::cout << "model " << model.to_string() << std::endl;
 	for (const auto &item: syms_to_expr_id) {
 		auto sym = item.first;
 		auto expr_idx = item.second;

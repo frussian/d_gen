@@ -126,31 +126,17 @@ int main(int argc, char *argv[]) {
 	llvm::InitializeNativeTargetAsmPrinter();
 	llvm::InitializeNativeTargetAsmParser();
 
-//	cantFail(LLJITBuilder().create())->addIRModule());
-
-
-	auto J = cantFail(DGenJIT::Create());
-	auto M = createDemoModule();
-	cantFail(J->addModule(std::move(M)));
-	// Look up the JIT'd function, cast it to a function pointer, then call it.
-	auto Add1Addr = ExitOnErr(J->lookup("add1"));
-	auto Add1 = (int(*)(int))Add1Addr.getAddress();
-	try {
-		int Result = Add1(42);
-		llvm::outs() << "add1(42) = " << Result << "\n";
-	} catch (const std::runtime_error &err) {
-		std::cout << "runtime error" << std::endl;
-		std::cout << err.what() << std::endl;
+	if (argc != 2) {
+		std::cout << "usage: " << argv[0] << " <path to program>" << std::endl;
+		return 0;
 	}
 
-	auto sinSymbol = ExitOnErr(J->lookup("printd"));
-	ExitOnErr(J->lookup("cb_fn"));
-	llvm::outs() << sinSymbol.getAddress() << "\n";
+	auto prog_path = argv[1];
 
 	try {
 		test_z3();
 		std::ifstream stream;
-		stream.open("examples/prefix_func.dg");
+		stream.open(prog_path);
 		if (stream.fail()) {
 			throw "can't read file";
 		}
@@ -163,10 +149,10 @@ int main(int argc, char *argv[]) {
 			std::cout << e.pos.line << ":" << e.pos.col << " " << e.msg << std::endl;
 		}
 	}
-//	catch (const std::exception &err) {
-//		std::cout << "error" << std::endl;
-//		std::cout << err.what() << std::endl;
-//	}
-//	J->getExecutionSession().dump(outs());
+	catch (const std::exception &err) {
+		std::cout << "error" << std::endl;
+		std::cout << err.what() << std::endl;
+	}
+	
 	return 0;
 }

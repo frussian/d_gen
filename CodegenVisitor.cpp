@@ -36,7 +36,6 @@ llvm::Value *CodegenVisitor::code_gen(FunctionNode *func) {
 }
 
 llvm::Value *CodegenVisitor::code_gen(BodyNode *body) {
-	std::cout << "visiting body node" << std::endl;
 	for (auto stmt: body->stmts) {
 		stmt->code_gen(this);
 	}
@@ -103,7 +102,6 @@ llvm::Value *CodegenVisitor::code_gen(IdentNode *node) {
 }
 
 llvm::Value *CodegenVisitor::code_gen(DefNode *node) {
-	std::cout << "visiting def node" << std::endl;
 	node->sym->create_alloca(get_ctx());
 	if (!node->rhs) {
 		return nullptr;
@@ -144,7 +142,6 @@ llvm::orc::ThreadSafeModule CodegenVisitor::get_module() {
 }
 
 llvm::Value *CodegenVisitor::code_gen(AsgNode *node) {
-	std::cout << "visiting asg node" << std::endl;
 	auto addr = get_address(node->lhs);
 	auto rhs = node->rhs->code_gen(this);
 
@@ -188,11 +185,9 @@ llvm::Value *CodegenVisitor::code_gen(ArrLookupNode *node) {
 }
 
 extern "C" uint32_t get_property(PropertyLookupNode *node, uint8_t *data) {
-	std::cout << "get property " << node << " " << (uint64_t)data << std::endl;
 	auto sym = node->ident->symbol;
 	if (sym->is_input) {
 		auto arr = std::dynamic_pointer_cast<ArraySym>(sym);
-		std::cout << "dyn cast got " << arr << std::endl;
 		return arr->get_size();
 	}
 	return Symbol::allocated_vals[data];
@@ -218,8 +213,7 @@ extern "C" uint8_t *create_arr(int32_t len, uint32_t pointed_sizeof) {
 	if (len < 0) {
 		throw std::runtime_error("create array with len < 0: " + std::to_string(len));
 	}
-	std::cout << "create arr instr with len " << len << " and sizeof" <<
-		pointed_sizeof << std::endl;
+	
 	auto *data = static_cast<uint8_t *>(malloc(len * pointed_sizeof));
 	Symbol::allocated_vals[data] = len;
 	return data;

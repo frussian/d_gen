@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <vector>
+#include <optional>
 #include "istream"
 
 class CodegenVisitor;
@@ -21,7 +22,7 @@ public:
 	explicit DGen(std::istream &input);
 
 	//TODO: add args: seed, number of tests, coverage
-	std::string generate_json();
+	std::string generate_json(std::optional<int> seed);
 private:
 	std::istream &input;
 	void gather_res(void *res);

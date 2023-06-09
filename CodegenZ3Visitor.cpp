@@ -140,9 +140,18 @@ bool CodegenZ3Visitor::traverse_ast_cb(ASTNode *node, std::any ctx) {
 void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	syms_to_expr_id.clear();
     exprs = z3::expr_vector(z3_ctx);
+
 	auto cond_expr = cond->gen_expr(this);
-    //TODO: if exprs.empty() then return (no unknown variables)
-	z3::solver solver(z3_ctx);
+
+	if (exprs.empty()) {
+		return;
+	}
+
+	z3::tactic smt_tactic(z3_ctx, "smt");
+	auto solver = smt_tactic.mk_solver();
+	solver.set("arith.random_initial_value", true);
+	solver.set("random_seed", (unsigned int)std::rand());
+
 	if (pre_cond->prob != 1) {
 		auto r = std::abs(std::rand() % 100);
 		if (r > pre_cond->prob) {
@@ -152,8 +161,10 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	} else {
 		//todo: other method based on coverage
 	}
+
 	solver.add(cond_expr);
-    for (const auto &item: syms_to_expr_id) {
+
+	for (const auto &item: syms_to_expr_id) {
         auto sym = item.first;
         if (dynamic_cast<CharSym*>(sym)) {
             //TODO: this should be a part of precond->cond
@@ -167,6 +178,7 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	std::cout << "solver " << solver << std::endl;
 
 	auto res = solver.check();
+
 	if (res != z3::sat) {
 		std::cout << "couldn't check satisfiability " << res << std::endl;
 		return;
@@ -175,7 +187,9 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	std::cout << "satisfiability checked successfully" << std::endl;
 
 	auto model = solver.get_model();
-	// std::cout << "model " << model.to_string() << std::endl;
+
+	std::cout << "model " << model.to_string() << std::endl;
+
 	for (const auto &item: syms_to_expr_id) {
 		auto sym = item.first;
 		auto expr_idx = item.second;

@@ -118,23 +118,43 @@ llvm::orc::ThreadSafeModule createDemoModule() {
 	return llvm::orc::ThreadSafeModule(std::move(M), std::move(Context));
 }
 
-void test_z3();
+void test_z3(int seed);
+
+char *prog_path = nullptr;
+std::optional<int> seed;
+
+void parse_args(int argc, char *argv[]) {
+	for (int i = 1; i < argc; i++) {
+		switch (argv[i][1]) {
+			case 'f':
+				prog_path = argv[i]+2;
+				break;
+			case 's':
+				seed = std::atoi(argv[i]+2);
+				break;
+		}
+	}
+};
+
+void print_usage(char *this_prog) {
+	std::cout << "usage: " << this_prog << " -f<path to program> -s<optional seed>" << std::endl;
+}
 
 int main(int argc, char *argv[]) {
+	//TODO: move to static method of DGen
 	// Initialize LLVM.
 	llvm::InitializeNativeTarget();
 	llvm::InitializeNativeTargetAsmPrinter();
 	llvm::InitializeNativeTargetAsmParser();
 
-	if (argc != 2) {
-		std::cout << "usage: " << argv[0] << " <path to program>" << std::endl;
+	parse_args(argc, argv);
+
+	if (!prog_path) {
+		print_usage(argv[0]);
 		return 0;
 	}
 
-	auto prog_path = argv[1];
-
 	try {
-		test_z3();
 		std::ifstream stream;
 		stream.open(prog_path);
 		if (stream.fail()) {
@@ -142,7 +162,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		DGen d_gen(stream);
-		std::string json = d_gen.generate_json();
+		std::string json = d_gen.generate_json(seed);
 	} catch (const BuildError &err) {
 		std::cout << "errors" << std::endl;
 		for (const auto &e: err.errors) {

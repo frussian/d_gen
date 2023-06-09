@@ -16,7 +16,7 @@
 
 DGen::DGen(std::istream &input): input(input) {}
 
-std::string DGen::generate_json() {
+std::string DGen::generate_json(std::optional<int> seed) {
 	auto builder = std::make_unique<ASTBuilderVisitor>(input);
 	func = builder->parse();
 //	func->print(std::cout, 0);
@@ -26,7 +26,11 @@ std::string DGen::generate_json() {
 	sem.type_check();
 	sem.eliminate_unreachable_code();
 
-	std::srand(time(nullptr));
+	if (!seed.has_value()) {
+		seed = time(NULL);
+	}
+
+	std::srand(*seed);
 
 	CodegenVisitor visitor(this);
 	visitor.code_gen(func);

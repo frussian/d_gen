@@ -155,7 +155,7 @@ z3::expr NumberSym::get_expr(z3::context &ctx) {
 }
 
 void NumberSym::fill_val(z3::expr &expr) {
-	num = expr.get_numeral_int();
+	num = expr.get_numeral_int64();
 }
 
 ArraySym::ArraySym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}

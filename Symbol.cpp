@@ -306,8 +306,8 @@ extern "C" int8_t char_rand_gen(CharSym *sym) {
 	if (!sym->ch.has_value()) {
 		//todo: use c++ 11 rand lib
 		//generating chars from 32 to 126
-		int r = std::abs(std::rand() % 94);
-		sym->ch = 32 + r;
+		int r = std::abs(std::rand() % ('z'-'a'));
+		sym->ch = 'a' + r;
 	}
 //	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
 	return *sym->ch;

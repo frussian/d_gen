@@ -29,7 +29,9 @@ extern "C" void z3_gen(CodegenZ3Visitor *visitor, ASTNode *cond, PrecondNode *pr
 
 llvm::Value *CodegenZ3Visitor::prepare_eval_ctx(ASTNode *cond, PrecondNode *pre_cond) {
 	//update ptrs and indices
-	traverse_ast_cb(cond, this);
+	if (pre_cond) {
+		pre_cond->visitChildren(&traverse_ast_cb, this);
+	}
 	cond->visitChildren(&traverse_ast_cb, this);
 
 	auto z3_gen_cb_t = llvm::FunctionType::get(llvm::Type::getVoidTy(*ctx),
@@ -144,6 +146,7 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	auto cond_expr = cond->gen_expr(this);
 
 	if (exprs.empty()) {
+		std::cout << "exprs empty => skipping z3 gen" << std::endl;
 		return;
 	}
 
@@ -162,23 +165,22 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 		//todo: other method based on coverage
 	}
 
-	solver.add(cond_expr);
+	if (pre_cond->expr) {
+		auto pre_cond_expr = pre_cond->expr->gen_expr(this);
+		solver.add(pre_cond_expr);
+	}
 
-	for (const auto &item: syms_to_expr_id) {
-        auto sym = item.first;
-        if (dynamic_cast<CharSym*>(sym)) {
-            //TODO: this should be a part of precond->cond
-            auto expr_idx = item.second;
-            auto expr = exprs[expr_idx];
-            solver.add(97 <= expr && expr <= 122);
-        }
-    }
+	solver.add(cond_expr);
 
 	std::cout << "err: " << solver.check_error() << std::endl;
 	std::cout << "solver " << solver << std::endl;
 
 	auto res = solver.check();
 
+	//TODO: check llvm optimization for expression like false && f_call()
+	// f_call shouldn't be invoked
+	// now it's causing a symbol to generate a value although it's not needed
+	// (and z3 fails with unsat)
 	if (res != z3::sat) {
 		std::cout << "couldn't check satisfiability " << res << std::endl;
 		return;

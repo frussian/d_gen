@@ -1,6 +1,6 @@
 int if_test(int i, string s) {
-	[prob = 0;]
-	if i > 2 && i < 14343434 && s[1] == 'b' {
+	[prob = 50; s[2] == 'n']
+	if i == 2 && s[1] == 'v' {
 		return 2
 	}
 	return 1

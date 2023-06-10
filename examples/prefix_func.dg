@@ -5,11 +5,10 @@ int[] prefix_func(string s) {
 	int i
 	p[0] = 0
 	for i = 1; i < s.len; i++ {
-		[prob = 20; s[i] == 'b']
+		[prob = 30; 'a' <= s[i] && s[i] <= 'z' && 'a' <= s[k] && s[k] <= 'z']
 		while k > 0 && s[i] != s[k] {
 			k = p[k-1]
 		}
-		[prob = 40;]
 		if s[i] == s[k] {
 			k++
 		}

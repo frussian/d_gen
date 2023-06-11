@@ -10,8 +10,6 @@
 
 #define D_GEN_FUNC_NAME "d_gen_func"
 
-#include "CodegenZ3Visitor.h"
-
 CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 	ctx = std::make_unique<llvm::LLVMContext>();
 	mod = std::make_unique<llvm::Module>("test", *ctx);
@@ -108,6 +106,8 @@ llvm::Value *CodegenVisitor::code_gen(DefNode *node) {
 	}
 
 	auto rhs = node->rhs->code_gen(this);
+	auto rhs_t = node->rhs->get_type();
+	rhs = convert_val_if_convertible(rhs, rhs_t, node->type);
 	builder->CreateStore(rhs, node->sym->alloca);
 
 	return nullptr;
@@ -144,7 +144,7 @@ llvm::orc::ThreadSafeModule CodegenVisitor::get_module() {
 llvm::Value *CodegenVisitor::code_gen(AsgNode *node) {
 	auto addr = get_address(node->lhs);
 	auto rhs = node->rhs->code_gen(this);
-
+	rhs = convert_val_if_convertible(rhs, node->rhs->get_type(), node->lhs->get_type());
 	return builder->CreateStore(rhs, addr);
 }
 
@@ -328,4 +328,11 @@ llvm::Value *CodegenVisitor::code_gen(ContinueNode *node) {
 llvm::Value *CodegenVisitor::code_gen(BreakNode *node) {
 	builder->CreateBr(node->loop->merge_bb);
 	return nullptr;
+}
+
+llvm::Value *CodegenVisitor::convert_val_if_convertible(llvm::Value *val, Type src_t, Type dest_t) {
+	if (dest_t != src_t && src_t.is_convertable_to(dest_t)) {
+		return builder->CreateIntCast(val, Symbol::map_type_to_llvm_type(dest_t, get_ctx()), true);
+	}
+	return val;
 }

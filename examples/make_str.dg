@@ -1,0 +1,18 @@
+string make_str(int start, int size) {
+    int left_lim = 'a'
+    int right_lim = 'z'
+    int max_size = right_lim - left_lim
+
+    [prob = 90;]
+    if left_lim <= start && start <= right_lim && right_lim - start < size {
+    } else {
+        return ""
+    }
+
+    string str = char[size]
+    int i
+    for i = 0; i < size; i++ {
+        str[i] = i+start
+    }
+    return str
+}

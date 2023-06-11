@@ -17,7 +17,7 @@ TypeKind Type::getCurrentType() const {
 	return types->at(pos);
 }
 
-Type Type::dropType() {
+Type Type::dropType() const {
 	if (*this == TypeKind::STRING) {
 		return TypeKind::CHAR;
 	}
@@ -132,9 +132,19 @@ bool Type::is_numerical() const {
 }
 
 bool Type::is_scalar() const {
-	return length() <= 1;
+	return length() == 1 && *this != TypeKind::STRING;
 }
 
 int Type::length() const {
 	return (int)types->size() - pos;
+}
+
+bool Type::is_string() const {
+	return length() == 1 && getCurrentType() == TypeKind::STRING ||
+			length() == 2 && getCurrentType() == TypeKind::ARR && dropType() == TypeKind::CHAR;
+}
+
+bool Type::is_convertable_to(Type &other) const {
+	return *this == other || is_numerical() && other.is_numerical() ||
+	 is_string() && other.is_string();
 }

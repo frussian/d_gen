@@ -1,6 +1,5 @@
 int if_test(int i, string s) {
-    [prob = 80;]
-    if s.len == 2 {
+    if s.len < 2 {
         return i
     }
 	[prob = 50; s[2] == 'n']

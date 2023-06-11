@@ -56,6 +56,8 @@ private:
 	llvm::Value *get_address(ASTNode *node);
 	FunctionNode *func;
 	std::unique_ptr<CodegenZ3Visitor> z3_visitor;
+
+	llvm::Value *convert_val_if_convertible(llvm::Value *val, Type src_t, Type dest_t);
 };
 
 #endif //D_GEN_CODEGENVISITOR_H

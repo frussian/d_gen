@@ -50,10 +50,7 @@ std::shared_ptr<Symbol> Symbol::create_symbol(Position pos, Type type, std::stri
 		case TypeKind::INT:
 			return std::shared_ptr<Symbol>(new NumberSym(pos, type, std::move(name), is_input));
 		case TypeKind::STRING:
-			str_t = std::make_shared<std::vector<TypeKind>>();
-			str_t->push_back(TypeKind::ARR);
-			str_t->push_back(TypeKind::CHAR);
-			return std::shared_ptr<Symbol>(new StringSym(pos, Type(str_t), std::move(name), is_input));
+			return std::shared_ptr<Symbol>(new StringSym(pos, type, std::move(name), is_input));
 		case TypeKind::CHAR:
 			return std::shared_ptr<Symbol>(new CharSym(pos, type, std::move(name), is_input));
 		case TypeKind::BOOL:

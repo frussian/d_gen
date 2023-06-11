@@ -405,10 +405,10 @@ void BinOpNode::print(std::ostream &out, int offset) {
 Type BinOpNode::get_type() {
 	auto t1 = lhs->get_type();
 	auto t2 = rhs->get_type();
-	auto op_group = get_op_group_args(op_type);
-	switch (op_group) {
+	auto args_op_group = get_op_group_args(op_type);
+	switch (args_op_group) {
 		case BinOpGroup::NUM:
-			if (! (t1.is_numerical() && t2.is_numerical()) ) {
+			if ( t1 != t2 ) {
 				throw BuildError(Err{lhs->pos,
 									 "invalid arguments types for operation \"" +
 									 map_op_type_to_str(op_type) +
@@ -435,6 +435,7 @@ Type BinOpNode::get_type() {
 			}
 			break;
 	}
+
 	return get_op_group_res(op_type);
 }
 
@@ -556,7 +557,8 @@ PropertyLookupNode::PropertyLookupNode(Position pos, std::string ident_name, std
 
 Type PropertyLookupNode::get_type() {
 	if (property_name == "len") {
-		if (ident->get_type().getCurrentType() != TypeKind::ARR) {
+		auto t = ident->get_type().getCurrentType();
+		if (t != TypeKind::ARR && t != TypeKind::STRING) {
 			throw BuildError(Err{pos, "invalid len property on non array symbol"});
 		}
 		return TypeKind::INT;

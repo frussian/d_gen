@@ -131,8 +131,9 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 		if (!def->rhs) {
 			return false;
 		}
+
 		auto t = def->rhs->get_type();
-		if (def->type != t) {
+		if (!t.is_convertable_to(def->type)) {
 			throw BuildError(Err{def->pos, "define statement have different types declared and evaluated: " +
 										   def->type.to_string() + " and " +
 										   t.to_string()});
@@ -189,7 +190,7 @@ void Semantics::type_check_precondition(PrecondNode *pre_cond) {
 void Semantics::type_check_asg(AsgNode *asg) {
 	auto lhs_t = asg->lhs->get_type();
 	auto rhs_t = asg->rhs->get_type();
-	if (! (lhs_t == rhs_t || lhs_t.is_numerical() && rhs_t.is_numerical()) ) {
+	if (!lhs_t.is_convertable_to(rhs_t)) {
 		throw BuildError(Err{asg->pos, "assignment sides have different types: " +
 									   lhs_t.to_string() + " and " +
 									   rhs_t.to_string()});

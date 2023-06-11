@@ -203,10 +203,7 @@ int ArraySym::get_size() {
 	if (!inited_size.has_value()) {
 		//TODO: change modulo
 		inited_size = std::abs(std::rand() % 10);
-		arr.reserve(*inited_size);
-		for (int i = 0; i < *inited_size; i++) {
-			arr.push_back(get_pointed_type_elem());
-		}
+		init_arr(*inited_size);
 	}
 //	std::cout << "get size " << *inited_size << std::endl;
 	return *inited_size;
@@ -281,6 +278,19 @@ std::shared_ptr<Symbol> ArraySym::get_symbol_by_idxs(ArraySym *arr, std::vector<
 	return arr->arr[idxs[i]];
 }
 
+void ArraySym::fill_val(z3::expr &expr) {
+	inited_size = expr.get_numeral_int64();
+	init_arr(*inited_size);
+}
+
+void ArraySym::init_arr(int size) {
+	arr.reserve(size);
+	arr.resize(0);
+	for (int i = 0; i < size; i++) {
+		arr.push_back(get_pointed_type_elem());
+	}
+}
+
 StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
 	ArraySym(pos, type, std::move(name), is_input) {}
 
@@ -291,6 +301,8 @@ std::string StringSym::serialize() {
 
 	//to force generation of arr
 	get_size();
+
+	std::cout << "serialize str " << get_size() << std::endl;
 
 	for (auto &el: arr) {
 		auto char_sym = std::dynamic_pointer_cast<CharSym>(el);
@@ -309,7 +321,7 @@ extern "C" int8_t char_rand_gen(CharSym *sym) {
 		int r = std::abs(std::rand() % ('z'-'a'));
 		sym->ch = 'a' + r;
 	}
-//	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
+	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
 	return *sym->ch;
 }
 

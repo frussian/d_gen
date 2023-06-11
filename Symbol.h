@@ -71,6 +71,10 @@ public:
 	std::string serialize() override;
 
 	static llvm::FunctionType *get_cb_func_type(llvm::Type *ret_type, llvm::LLVMContext *ctx);
+	void fill_val(z3::expr &expr) override;
+
+private:
+	void init_arr(int size);
 };
 
 class NumberSym: public Symbol {

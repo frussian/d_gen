@@ -28,12 +28,14 @@ public:
 							  llvm::IRBuilder<> *builder, CodegenVisitor *cg_visitor);
 	llvm::Value *prepare_eval_ctx(ASTNode *cond, PrecondNode *pre_cond);
 	llvm::Value *prepare_eval_ctx(IdentNode *node);
+	llvm::Value *prepare_eval_ctx(PropertyLookupNode *node);
 	llvm::Value *prepare_eval_ctx(ArrLookupNode *node);
 
 	z3::expr gen_expr(BoolNode *node);
 	z3::expr gen_expr(CharNode *node);
 	z3::expr gen_expr(NumberNode *node);
 	z3::expr gen_expr(IdentNode *node);
+	z3::expr gen_expr(PropertyLookupNode *node);
 	z3::expr gen_expr(ArrLookupNode *node);
 	z3::expr gen_expr(BinOpNode *node);
 

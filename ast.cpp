@@ -568,5 +568,9 @@ llvm::Value *PropertyLookupNode::code_gen(CodegenVisitor *visitor) {
 	return visitor->code_gen(this);
 }
 
+z3::expr PropertyLookupNode::gen_expr(CodegenZ3Visitor *visitor) {
+	return visitor->gen_expr(this);
+}
+
 PrecondNode::PrecondNode(Position pos, int prob, ASTNode *expr):
 	ASTNode(pos, {expr}), prob(prob), expr(expr) {}

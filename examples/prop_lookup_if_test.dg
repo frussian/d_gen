@@ -1,0 +1,19 @@
+int prop_lookup(int i, string s) {
+    [prob = 50;]
+    if s.len > 2 && s.len < 5 {
+        return i
+    }
+
+    int[] s_arr = int[70]
+    int j
+    int size = 70
+    for j = 0; j < size; j++ {
+        s_arr[j] = j
+    }
+
+    if s_arr.len > 50 {
+        return s_arr.len
+    }
+
+    return s_arr.len + s_arr[j-1]
+}

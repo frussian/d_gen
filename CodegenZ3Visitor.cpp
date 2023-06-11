@@ -3,7 +3,6 @@
 //
 
 #include "CodegenZ3Visitor.h"
-#include "utils/assert.h"
 
 CodegenZ3Visitor::CodegenZ3Visitor(llvm::LLVMContext *ctx,
 								   llvm::Module *mod,
@@ -134,7 +133,9 @@ bool CodegenZ3Visitor::traverse_ast_cb(ASTNode *node, std::any ctx) {
 		visitor->prepare_eval_ctx(ident);
 	} else if (auto arr_lookup = dynamic_cast<ArrLookupNode*>(node)) {
 		visitor->prepare_eval_ctx(arr_lookup);
-	} //TODO: implement property_lookup
+	} else if (auto prop_lookup = dynamic_cast<PropertyLookupNode*>(node)) {
+		visitor->prepare_eval_ctx(prop_lookup);
+	}
 
 	return true;
 }
@@ -297,3 +298,27 @@ z3::expr CodegenZ3Visitor::gen_expr(BinOpNode *node) {
 	}
 }
 
+llvm::Value *CodegenZ3Visitor::prepare_eval_ctx(PropertyLookupNode *node) {
+	if (!node->ident->symbol->is_input) {
+		prepare_eval_ctx(node->ident);
+		return nullptr;
+	}
+}
+
+z3::expr CodegenZ3Visitor::gen_expr(PropertyLookupNode *node) {
+	auto sym = std::dynamic_pointer_cast<ArraySym>(node->ident->symbol);
+	if (sym->is_input) {
+		if (sym->inited_size.has_value()) {
+			return z3_ctx.int_val(*sym->inited_size);
+		} else {
+			auto name = sym->name + ".len";
+			auto expr = z3_ctx.int_const(name.c_str());
+			syms_to_expr_id[sym.get()] = exprs.size();
+			exprs.push_back(expr);
+			return expr;
+		}
+	} else {
+		auto len = Symbol::allocated_vals[*(uint8_t **)sym->addr];
+		return z3_ctx.int_val(len);
+	}
+}

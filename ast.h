@@ -330,6 +330,8 @@ public:
 	Type get_type() override;
 
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
+
+	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
 };
 
 

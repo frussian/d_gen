@@ -70,6 +70,8 @@ std::vector<std::shared_ptr<Symbol>> Semantics::type_ast() {
 		s_table->add_symbol(arg->name, in_sym);
 	}
 
+	//TODO: check pre_cond here
+
 	func->body->visitChildren(&type_visitor, s_table);
 
 	return std::move(inputs);
@@ -89,8 +91,7 @@ bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
 		if (!symbol) {
 			throw BuildError(Err{ident->pos, "undefined symbol " + ident->name});
 		}
-		std::cout << "connect symbol " << ident->name << " at " << ident->pos <<
-		" to symbol defined at " << symbol->pos << std::endl;
+
 		ident->symbol = symbol;
 	}
 

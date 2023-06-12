@@ -47,12 +47,11 @@ class BodyNode;
 
 class FunctionNode: public ASTNode {
 public:
-	ASTNode *pre_cond;
 	Type ret_type;
 	std::string name;
 	std::vector<DefNode*> args;
 	BodyNode *body;
-	explicit FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
+	explicit FunctionNode(Position pos, Type ret_type, std::string name,
 						  std::vector<DefNode*> args, BodyNode *body);
 
 	void print(std::ostream &out, int offset) override;

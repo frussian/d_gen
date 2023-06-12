@@ -70,8 +70,6 @@ std::vector<std::shared_ptr<Symbol>> Semantics::type_ast() {
 		s_table->add_symbol(arg->name, in_sym);
 	}
 
-	//TODO: check pre_cond here
-
 	func->body->visitChildren(&type_visitor, s_table);
 
 	return std::move(inputs);

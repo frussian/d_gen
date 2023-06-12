@@ -50,9 +50,9 @@ z3::expr ASTNode::gen_expr(CodegenZ3Visitor *visitor) {
 	throw std::runtime_error("gen expr on wrong ast node");
 }
 
-FunctionNode::FunctionNode(Position pos, ASTNode *pre_cond, Type ret_type, std::string name,
+FunctionNode::FunctionNode(Position pos, Type ret_type, std::string name,
 						   std::vector<DefNode *> args, BodyNode *body):
-	ASTNode(pos, {pre_cond, body}), pre_cond(pre_cond), ret_type(ret_type), name(std::move(name)),
+	ASTNode(pos, {body}), ret_type(ret_type), name(std::move(name)),
 	args(std::move(args)), body(body) {
 	for (const auto arg: this->args) {
 		children.push_back(arg);

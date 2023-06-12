@@ -1,7 +1,7 @@
 grammar d_gen;
 
 program      : function NEWLINE* EOF ;
-function     : (precondition NEWLINE)? ret_type = type f_name = IDENT
+function     : ret_type = type f_name = IDENT
 	'(' arg_types += type args += IDENT (',' arg_types += type args += IDENT)* ')' body;
 
 body         : '{' NEWLINE (stmts += statement NEWLINE)* '}';

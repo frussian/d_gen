@@ -72,10 +72,6 @@ std::any ASTBuilderVisitor::visitChildren(antlr4::tree::ParseTree *node) {
 }
 
 std::any ASTBuilderVisitor::visitFunction(d_genParser::FunctionContext *ctx) {
-	ASTNode *pre_cond = nullptr;
-	if (ctx->precondition()) {
-		pre_cond = std::any_cast<PrecondNode*>(ctx->precondition()->accept(this));
-	}
 	auto ret_type = std::any_cast<Type>(ctx->ret_type->accept(this));
 	auto f_name = ctx->f_name->getText();
 	std::vector<DefNode*> args;
@@ -86,7 +82,7 @@ std::any ASTBuilderVisitor::visitFunction(d_genParser::FunctionContext *ctx) {
 		args.push_back(new DefNode(getStartPos(ctx->arg_types[i]), ident_name, ident_type, nullptr));
 	}
 	auto body = std::any_cast<BodyNode*>(ctx->body()->accept(this));
-	return new FunctionNode(getStartPos(ctx), pre_cond, ret_type, std::move(f_name), std::move(args), body);
+	return new FunctionNode(getStartPos(ctx), ret_type, std::move(f_name), std::move(args), body);
 }
 
 std::any ASTBuilderVisitor::visitBody(d_genParser::BodyContext *ctx) {

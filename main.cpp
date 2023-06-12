@@ -163,6 +163,9 @@ int main(int argc, char *argv[]) {
 
 		DGen d_gen(stream);
 		std::string json = d_gen.generate_json(seed);
+
+		std::cout << "generated tests:\n";
+		std::cout << json << std::endl;
 	} catch (const BuildError &err) {
 		std::cout << "errors" << std::endl;
 		for (const auto &e: err.errors) {

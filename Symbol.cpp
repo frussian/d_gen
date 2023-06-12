@@ -29,7 +29,7 @@ static void fill_dest(std::shared_ptr<Symbol> sym, uint8_t *dest) {
 	}
 }
 
-std::unordered_map<uint8_t*, uint32_t> Symbol::allocated_vals;
+std::unordered_map<uint8_t*, Symbol::alloc_data> Symbol::allocated_vals;
 
 Symbol::Symbol(Position pos, Type type, std::string name, bool is_input):
 	pos(pos), type(type), name(std::move(name)), is_input(is_input) {}
@@ -114,7 +114,6 @@ void Symbol::fill_val(z3::expr &) {}
 
 extern "C" int32_t num_rand_gen(NumberSym *sym) {
 	if (!sym->num.has_value()) {
-		//todo: use c++ 11 rand lib
 		sym->num = std::rand() % 200;
 	}
 	return *sym->num;
@@ -155,6 +154,10 @@ void NumberSym::fill_val(z3::expr &expr) {
 	num = expr.get_numeral_int64();
 }
 
+void NumberSym::reset_val() {
+	num.reset();
+}
+
 ArraySym::ArraySym(Position pos, Type type, std::string name, bool is_input): Symbol(pos, type, name, is_input) {}
 
 extern "C" void get_val_arr(ArraySym *arr, int *idxs, int len, uint8_t *dest) {
@@ -173,8 +176,7 @@ extern "C" uint8_t *arr_rand_gen(ArraySym *arr) {
 	int pointed_sizeof = arr->get_pointed_type_elem()->get_sizeof();
 	auto *data = static_cast<uint8_t *>(malloc(size * pointed_sizeof));
 
-	//TODO: store all mallocs to free them at the end
-	Symbol::allocated_vals[data] = size;
+	Symbol::allocated_vals[data] = {true, (uint32_t)size};
 
 	for (int i = 0; i < arr->arr.size(); i++) {
 		auto val = arr->arr[i];
@@ -202,7 +204,6 @@ int ArraySym::get_size() {
 		inited_size = std::abs(std::rand() % 10);
 		init_arr(*inited_size);
 	}
-//	std::cout << "get size " << *inited_size << std::endl;
 	return *inited_size;
 }
 
@@ -288,6 +289,11 @@ void ArraySym::init_arr(int size) {
 	}
 }
 
+void ArraySym::reset_val() {
+	inited_size.reset();
+	arr.clear();
+}
+
 StringSym::StringSym(Position pos, Type type, std::string name, bool is_input):
 	ArraySym(pos, type, std::move(name), is_input) {}
 
@@ -298,8 +304,6 @@ std::string StringSym::serialize() {
 
 	//to force generation of arr
 	get_size();
-
-	std::cout << "serialize str " << get_size() << std::endl;
 
 	for (auto &el: arr) {
 		auto char_sym = std::dynamic_pointer_cast<CharSym>(el);
@@ -313,12 +317,10 @@ std::string StringSym::serialize() {
 
 extern "C" int8_t char_rand_gen(CharSym *sym) {
 	if (!sym->ch.has_value()) {
-		//todo: use c++ 11 rand lib
-		//generating chars from 32 to 126
+		//TODO: generating chars from 32 to 126?
 		int r = std::abs(std::rand() % ('z'-'a'));
 		sym->ch = 'a' + r;
 	}
-	std::cout << "get char " << *sym->ch << "(" << (int)*sym->ch << ")" << std::endl;
 	return *sym->ch;
 }
 
@@ -359,12 +361,14 @@ void CharSym::fill_val(z3::expr &expr) {
 	ch = expr.get_numeral_int();
 }
 
+void CharSym::reset_val() {
+	ch.reset();
+}
+
 extern "C" int8_t bool_rand_gen(BoolSym *sym) {
 	if (!sym->val.has_value()) {
-		//todo: use c++ 11 rand lib
 		sym->val = std::abs(std::rand() % 2);
 	}
-//	std::cout << "get bool " << *sym->val << std::endl;
 	return (int8_t)*sym->val;
 }
 
@@ -407,3 +411,6 @@ void BoolSym::fill_val(z3::expr &expr) {
 	val = expr.is_true();
 }
 
+void BoolSym::reset_val() {
+	val.reset();
+}

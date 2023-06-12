@@ -27,7 +27,11 @@ public:
 	//z3
 	void *addr = nullptr;
 
-	static std::unordered_map<uint8_t*, uint32_t> allocated_vals;
+	struct alloc_data {
+		bool is_alloc;
+		uint32_t size;
+	};
+	static std::unordered_map<uint8_t*, alloc_data> allocated_vals;
 
 	virtual llvm::Value *code_gen(LLVMCtx ctx);
 
@@ -44,6 +48,7 @@ public:
 	virtual z3::expr get_expr(z3::context &ctx);
 	virtual void fill_val(z3::expr &expr);
 	virtual bool has_val();
+	virtual void reset_val() = 0;
 protected:
 	explicit Symbol(Position pos, Type type, std::string name, bool is_input = false);
 };
@@ -72,7 +77,7 @@ public:
 
 	static llvm::FunctionType *get_cb_func_type(llvm::Type *ret_type, llvm::LLVMContext *ctx);
 	void fill_val(z3::expr &expr) override;
-
+	void reset_val() override;
 private:
 	void init_arr(int size);
 };
@@ -95,6 +100,8 @@ public:
 	void fill_val(z3::expr &expr) override;
 
 	bool has_val() override;
+
+	void reset_val() override;
 };
 
 class CharSym: public Symbol {
@@ -115,6 +122,8 @@ public:
 	void fill_val(z3::expr &expr) override;
 
 	bool has_val() override;
+
+	void reset_val() override;
 };
 
 class BoolSym: public Symbol {
@@ -135,6 +144,8 @@ public:
 	void fill_val(z3::expr &expr) override;
 
 	bool has_val() override;
+
+	void reset_val() override;
 };
 
 class StringSym: public ArraySym {

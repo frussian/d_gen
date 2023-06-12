@@ -44,11 +44,29 @@ std::string DGen::generate_json(std::optional<int> seed) {
 	auto d_gen_func = (void(*)())cantFail(J->lookup("d_gen_func")).getAddress();
 
 	//loop
+	int n = 10;
+	tests.clear();
+	tests.reserve(n);
 	std::cout << "calling d_gen_func" << std::endl;
-	d_gen_func();
+	for (int i = 0; i < n; i++) {
+		d_gen_func();
+		reset();
+	}
 	std::cout << "called d_gen_func" << std::endl;
 
-	return "{}";
+	std::string json_res = "{\ttests: [\n";
+
+	for (int i = 0; i < tests.size(); i++) {
+		json_res += "\t" + tests[i];
+		if (i != tests.size()-1) {
+			json_res += ",";
+		}
+		json_res += "\n";
+	}
+
+	json_res += "}";
+
+	return json_res;
 }
 
 std::string gather_rec(void *res, Type type) {
@@ -65,7 +83,7 @@ std::string gather_rec(void *res, Type type) {
 			return std::to_string(num);
 		case TypeKind::STRING:
 			str_ptr = *(uint8_t**)res;
-			size = Symbol::allocated_vals[str_ptr];
+			size = Symbol::allocated_vals[str_ptr].size;
 			//TODO: escape json
 			return "\"" + std::string((const char*)str_ptr, size) + "\"";
 		case TypeKind::CHAR:
@@ -80,7 +98,7 @@ std::string gather_rec(void *res, Type type) {
 			}
 		case TypeKind::ARR:
 			arr_ptr = *(uint8_t**)res;
-			size = Symbol::allocated_vals[arr_ptr];
+			size = Symbol::allocated_vals[arr_ptr].size;
 			type_size = Symbol::create_symbol(Position(0, 0), type.dropType(), "tmp")->get_sizeof();
 			tmp = "[";
 			for (int i = 0; i < size; i++) {
@@ -97,20 +115,29 @@ std::string gather_rec(void *res, Type type) {
 }
 
 void DGen::gather_res(void *res) {
-	std::cout << "test data:" << std::endl;
-
-	std::string test_input = "{\n";
+	std::string test_data = "{\n";
 	for (const auto &in_sym: inputs) {
-		test_input += "\t" + in_sym->name + ": ";
-		test_input += in_sym->serialize();
-		test_input += ",\n";
+		test_data += "\t" + in_sym->name + ": ";
+		test_data += in_sym->serialize();
+		test_data += ",\n";
 	}
-	test_input[test_input.size()-2] = ' ';
-	test_input += "}";
-	std::cout << test_input << std::endl;
 
 	auto res_str = gather_rec(res, func->ret_type);
-	std::cout << "expected result:" << std::endl;
-	std::cout << res_str << std::endl;
-	//TODO: clear allocated_vals, clear in_syms
+	test_data += "\t" + func->name + ": " + res_str;
+	test_data += "\t\n}";
+
+	tests.push_back(std::move(test_data));
+}
+
+void DGen::reset() {
+	for (auto &item: Symbol::allocated_vals) {
+		if (item.second.is_alloc) {
+			free(item.first);
+		}
+	}
+	Symbol::allocated_vals.clear();
+
+	for (auto &arg: inputs) {
+		arg->reset_val();
+	}
 }

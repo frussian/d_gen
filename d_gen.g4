@@ -56,11 +56,11 @@ ASSG_TYPE    : '+=' | '-=' | '*=' | '/=' ;
 CREM_TYPE    : '++' | '--' ;
 CMP_OP       : '<' | '<=' | '>' | '>=' | '==' | '!=' ;
 
+BOOL         : 'true' | 'false' ;
 IDENT        : [a-zA-Z][a-zA-Z0-9_]* ;
 CHAR         : '\'' (. | '\\n' | '\\t') '\'' ;
 STRING       : '"' .*? '"' ;
 NUM          : [1-9][0-9]* | [0-9] ;
-BOOL         : 'true' | 'false' ;
 
 NEWLINE      : ('\r'? '\n' | '\r')+ ;
 WHITESPACE   : [ \t] -> skip ;

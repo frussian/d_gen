@@ -25,9 +25,12 @@ public:
 	std::string generate_json(std::optional<int> seed);
 private:
 	std::istream &input;
+	std::vector<std::string> tests;
 	void gather_res(void *res);
 	FunctionNode *func;
 	std::vector<std::shared_ptr<Symbol>> inputs;
+
+	void reset();
 };
 
 #endif //D_GEN_DGEN_H

@@ -49,9 +49,21 @@ llvm::Value *CodegenVisitor::code_gen(NumberNode *node) {
 	return builder->getInt32(node->num);
 }
 
+extern "C" void set_global_ptr_size(char *str) {
+	Symbol::allocated_vals[(uint8_t*)str] = {false, (uint32_t)strlen(str)};
+}
+
 llvm::Value *CodegenVisitor::code_gen(StringNode *node) {
-	//TODO: need to store this pointer in allocated_vals
-	return builder->CreateGlobalStringPtr(node->str);
+	auto addr = builder->CreateGlobalStringPtr(node->str);
+
+	auto set_global_ptr_size_t = llvm::FunctionType::get(llvm::Type::getVoidTy(*ctx),
+												{llvm::Type::getInt8PtrTy(*ctx)}, false);
+
+	auto set_global_ptr_size_cb = mod->getOrInsertFunction("set_global_ptr_size", set_global_ptr_size_t);
+
+	builder->CreateCall(set_global_ptr_size_cb, {addr});
+
+	return addr;
 }
 
 llvm::Value *CodegenVisitor::code_gen(CharNode *node) {
@@ -122,7 +134,6 @@ extern "C" void gather_res(CodegenVisitor *visitor, void *res) {
 }
 
 llvm::Value *CodegenVisitor::code_gen(ReturnNode *node) {
-	//TODO: call function to process the result
 	auto res_ptr = builder->CreateAlloca(Symbol::map_type_to_llvm_type(func->ret_type, get_ctx()));
 	auto res = node->expr->code_gen(this);
 	builder->CreateStore(res, res_ptr);
@@ -190,7 +201,7 @@ extern "C" uint32_t get_property(PropertyLookupNode *node, uint8_t *data) {
 		auto arr = std::dynamic_pointer_cast<ArraySym>(sym);
 		return arr->get_size();
 	}
-	return Symbol::allocated_vals[data];
+	return Symbol::allocated_vals[data].size;
 }
 
 llvm::Value *CodegenVisitor::code_gen(PropertyLookupNode *node) {
@@ -215,7 +226,7 @@ extern "C" uint8_t *create_arr(int32_t len, uint32_t pointed_sizeof) {
 	}
 	
 	auto *data = static_cast<uint8_t *>(malloc(len * pointed_sizeof));
-	Symbol::allocated_vals[data] = len;
+	Symbol::allocated_vals[data] = {true, (uint32_t)len};
 	return data;
 }
 

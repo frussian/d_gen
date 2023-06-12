@@ -146,17 +146,12 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 
 	auto cond_expr = cond->gen_expr(this);
 
-	if (exprs.empty()) {
-		std::cout << "exprs empty => skipping z3 gen" << std::endl;
-		return;
-	}
-
 	z3::tactic smt_tactic(z3_ctx, "smt");
 	auto solver = smt_tactic.mk_solver();
 	solver.set("arith.random_initial_value", true);
 	solver.set("random_seed", (unsigned int)std::rand());
 
-	if (pre_cond->prob != 1) {
+	if (pre_cond->prob != -1) {
 		auto r = std::abs(std::rand() % 100);
 		if (r > pre_cond->prob) {
 			std::cout << "decided to negate, recv " << r << " prob" << std::endl;
@@ -166,12 +161,17 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 		//todo: other method based on coverage
 	}
 
+	solver.add(cond_expr);
+
 	if (pre_cond->expr) {
 		auto pre_cond_expr = pre_cond->expr->gen_expr(this);
 		solver.add(pre_cond_expr);
 	}
 
-	solver.add(cond_expr);
+	if (exprs.empty()) {
+		std::cout << "exprs empty => skipping z3 gen" << std::endl;
+		return;
+	}
 
 	std::cout << "err: " << solver.check_error() << std::endl;
 	std::cout << "solver " << solver << std::endl;
@@ -318,7 +318,7 @@ z3::expr CodegenZ3Visitor::gen_expr(PropertyLookupNode *node) {
 			return expr;
 		}
 	} else {
-		auto len = Symbol::allocated_vals[*(uint8_t **)sym->addr];
+		auto len = Symbol::allocated_vals[*(uint8_t **)sym->addr].size;
 		return z3_ctx.int_val(len);
 	}
 }

@@ -2,8 +2,8 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "BuildError.h"
-#include "DGen.h"
+#include "d_gen/BuildError.h"
+#include "d_gen/DGen.h"
 
 char *prog_path = nullptr;
 std::optional<int> seed;

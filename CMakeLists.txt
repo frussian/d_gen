@@ -1,15 +1,58 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(d_gen)
+project(d_gen
+		VERSION 1.0.0
+		DESCRIPTION "Test Data Generator"
+		LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(d_gen main.cpp z3_test.cpp ast.h ast.cpp utils/assert.h type.h type.cpp ASTBuilderVisitor.cpp ASTBuilderVisitor.h BuildError.cpp BuildError.h Semantics.cpp Semantics.h Symbol.cpp Symbol.h SymbolTable.cpp SymbolTable.h Position.cpp Position.h CodegenVisitor.cpp CodegenVisitor.h DGenJIT.cpp DGenJIT.h LLVMCtx.h DGen.cpp DGen.h CodegenZ3Visitor.cpp CodegenZ3Visitor.h)
-# rdynamic, needed to discover functions from d_gen by llvm
-set_property(TARGET d_gen PROPERTY ENABLE_EXPORTS ON)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+if(NOT DEFINED D_GEN_INSTALL_CMAKEDIR)
+	set(D_GEN_INSTALL_CMAKEDIR
+			"${CMAKE_INSTALL_LIBDIR}/cmake/d_gen-${PROJECT_VERSION}" CACHE STRING
+			"Install path for d_gen package-related CMake files")
+endif()
+
+
+add_library(d_gen SHARED) # initialized below
+add_library(d_gen::d_gen ALIAS d_gen)
+
+set(public_headers
+		include/d_gen/DGen.h
+		include/d_gen/BuildError.h
+		include/d_gen/Position.h)
+
+set(sources
+		src/z3_test.cpp src/ast.h
+		src/ast.cpp src/utils/assert.h src/type.h
+		src/type.cpp src/ASTBuilderVisitor.cpp src/ASTBuilderVisitor.h
+		src/BuildError.cpp src/Semantics.cpp
+		src/Semantics.h src/Symbol.cpp src/Symbol.h
+		src/SymbolTable.cpp src/SymbolTable.h src/Position.cpp
+		src/CodegenVisitor.cpp src/CodegenVisitor.h
+		src/DGenJIT.cpp src/DGenJIT.h src/LLVMCtx.h src/DGen.cpp
+		src/CodegenZ3Visitor.cpp src/CodegenZ3Visitor.h
+		${public_headers})
+
+target_sources(d_gen PRIVATE ${sources})
+
+target_include_directories(d_gen
+		PUBLIC
+		"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/d_gen>"
+		PRIVATE
+		"${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+set_target_properties(d_gen PROPERTIES
+		PUBLIC_HEADER "${public_headers}"
+		SOVERSION ${PROJECT_VERSION_MAJOR}
+		VERSION ${PROJECT_VERSION})
+
 
 #ANTLR
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/cmake)
 add_definitions(-DANTLR4CPP_STATIC)
 # using /MD flag for antlr4_runtime (for Visual C++ compilers only)
 set(ANTLR4_WITH_STATIC_CRT OFF)
@@ -94,3 +137,30 @@ target_link_libraries(d_gen PRIVATE ${llvm_libs})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 #LLVM
+
+configure_package_config_file(cmake/d_gen-config.cmake.in d_gen-config.cmake
+		INSTALL_DESTINATION "${D_GEN_INSTALL_CMAKEDIR}")
+
+write_basic_package_version_file(d_gen-config-version.cmake
+		COMPATIBILITY SameMajorVersion)
+
+install(TARGETS d_gen EXPORT d_gen_export
+		RUNTIME COMPONENT d_gen
+		LIBRARY COMPONENT d_gen NAMELINK_COMPONENT d_gen-dev
+		ARCHIVE COMPONENT d_gen-dev
+		PUBLIC_HEADER COMPONENT d_gen-dev
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/d_gen")
+
+set(targets_file "d_gen-targets.cmake")
+
+install(EXPORT d_gen_export
+		COMPONENT d_gen-dev
+		FILE "${targets_file}"
+		DESTINATION "${D_GEN_INSTALL_CMAKEDIR}"
+		NAMESPACE d_gen::)
+
+install(FILES
+		"${CMAKE_CURRENT_BINARY_DIR}/d_gen-config.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/d_gen-config-version.cmake"
+		COMPONENT d_gen-dev
+		DESTINATION "${D_GEN_INSTALL_CMAKEDIR}")

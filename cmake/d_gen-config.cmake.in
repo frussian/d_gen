@@ -1,0 +1,12 @@
+include(CMakeFindDependencyMacro)
+
+if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/d_gen-targets.cmake")
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+        "d_gen library were requested but not found")
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND OFF)
+    return()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/d_gen-targets.cmake")
+
+find_dependency(Z3)

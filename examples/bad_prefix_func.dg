@@ -1,0 +1,21 @@
+int[] prefix_func(string s) {
+	int[] p = int[s.len]
+	int k = 0
+	int i
+	p[0] = 0
+	for i = 0; i < s.len; i++ {
+	    char c = s[i]
+	}
+	for i = 1; i < s.len; i++ {
+		[prob = 30; 'a' <= s[i] && s[i] <= 'z' && 'a' <= s[k] && s[k] <= 'z']
+		while k > 0 && s[i] != s[k] {
+			k = p[k-1]
+		}
+		if s[i] == s[k] {
+			k++
+		}
+		p[i] = k
+	}
+
+	return p
+}

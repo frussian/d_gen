@@ -7,8 +7,10 @@
 
 
 #include <exception>
+#include <vector>
+#include <string>
 
-#include "ast.h"
+#include "Position.h"
 
 struct Err {
 	Position pos;

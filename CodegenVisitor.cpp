@@ -2,13 +2,18 @@
 // Created by Anton on 27.05.2023.
 //
 
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils.h"
+
 #include "utils/assert.h"
 
 #include "CodegenVisitor.h"
 
 #include "DGen.h"
 
-#define D_GEN_FUNC_NAME "d_gen_func"
 
 CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 	ctx = std::make_unique<llvm::LLVMContext>();
@@ -30,6 +35,7 @@ CodegenVisitor::CodegenVisitor(DGen *d_gen): d_gen(d_gen) {
 llvm::Value *CodegenVisitor::code_gen(FunctionNode *func) {
 	this->func = func;
 	code_gen(func->body);
+	run_optimizations();
 	return nullptr;
 }
 
@@ -346,4 +352,25 @@ llvm::Value *CodegenVisitor::convert_val_if_convertible(llvm::Value *val, Type s
 		return builder->CreateIntCast(val, Symbol::map_type_to_llvm_type(dest_t, get_ctx()), true);
 	}
 	return val;
+}
+
+void CodegenVisitor::run_optimizations() {
+	llvm::Function *d_gen_func = mod->getFunction(D_GEN_FUNC_NAME);
+	auto functionPassManager =
+			std::make_unique<llvm::legacy::FunctionPassManager>(mod.get());
+
+	// Promote allocas to registers.
+	functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
+	// Do simple "peephole" optimizations
+	functionPassManager->add(llvm::createInstructionCombiningPass());
+	// Reassociate expressions.
+	functionPassManager->add(llvm::createReassociatePass());
+	// Eliminate Common SubExpressions.
+	functionPassManager->add(llvm::createGVNPass());
+	// Simplify the control flow graph (deleting unreachable blocks etc).
+	functionPassManager->add(llvm::createCFGSimplificationPass());
+
+	functionPassManager->doInitialization();
+
+	functionPassManager->run(*d_gen_func);
 }

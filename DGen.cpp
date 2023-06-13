@@ -2,6 +2,8 @@
 // Created by Anton on 29.05.2023.
 //
 
+#include "llvm/Support/TargetSelect.h"
+
 #include "DGen.h"
 
 #include <any>
@@ -16,7 +18,7 @@
 
 DGen::DGen(std::istream &input): input(input) {}
 
-std::string DGen::generate_json(std::optional<int> seed) {
+std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 	auto builder = std::make_unique<ASTBuilderVisitor>(input);
 	func = builder->parse();
 //	func->print(std::cout, 0);
@@ -41,18 +43,15 @@ std::string DGen::generate_json(std::optional<int> seed) {
 	auto J = cantFail(DGenJIT::Create());
 	cantFail(J->addModule(std::move(mod)));
 
-	auto d_gen_func = (void(*)())cantFail(J->lookup("d_gen_func")).getAddress();
+	auto d_gen_func = (void(*)())cantFail(J->lookup(D_GEN_FUNC_NAME)).getAddress();
 
 	//loop
-	int n = 10;
 	tests.clear();
-	tests.reserve(n);
-	std::cout << "calling d_gen_func" << std::endl;
-	for (int i = 0; i < n; i++) {
+	tests.reserve(tests_num);
+	for (int i = 0; i < tests_num; i++) {
 		d_gen_func();
 		reset();
 	}
-	std::cout << "called d_gen_func" << std::endl;
 
 	std::string json_res = "{\ttests: [\n";
 
@@ -117,14 +116,14 @@ std::string gather_rec(void *res, Type type) {
 void DGen::gather_res(void *res) {
 	std::string test_data = "{\n";
 	for (const auto &in_sym: inputs) {
-		test_data += "\t" + in_sym->name + ": ";
+		test_data += "\t\t" + in_sym->name + ": ";
 		test_data += in_sym->serialize();
 		test_data += ",\n";
 	}
 
 	auto res_str = gather_rec(res, func->ret_type);
-	test_data += "\t" + func->name + ": " + res_str;
-	test_data += "\t\n}";
+	test_data += "\t\t" + func->name + ": " + res_str;
+	test_data += "\n\t}";
 
 	tests.push_back(std::move(test_data));
 }
@@ -140,4 +139,10 @@ void DGen::reset() {
 	for (auto &arg: inputs) {
 		arg->reset_val();
 	}
+}
+
+void DGen::init_backend() {
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmPrinter();
+	llvm::InitializeNativeTargetAsmParser();
 }

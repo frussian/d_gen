@@ -3,7 +3,6 @@ int[] prefix_func(string s) {
     if true {
     }
 
-	string test_str = "hey str"
 	int[] p = int[s.len]
 	int k = 0
 	int i

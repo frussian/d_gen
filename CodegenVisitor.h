@@ -5,6 +5,7 @@
 #ifndef D_GEN_CODEGENVISITOR_H
 #define D_GEN_CODEGENVISITOR_H
 
+
 #include <memory>
 
 #include <llvm/IR/LLVMContext.h>
@@ -19,6 +20,8 @@ class DGen;
 class CodegenZ3Visitor;
 
 #include "CodegenZ3Visitor.h"
+
+#define D_GEN_FUNC_NAME "d_gen_func"
 
 class CodegenVisitor {
 public:
@@ -58,6 +61,8 @@ private:
 	std::unique_ptr<CodegenZ3Visitor> z3_visitor;
 
 	llvm::Value *convert_val_if_convertible(llvm::Value *val, Type src_t, Type dest_t);
+
+	void run_optimizations();
 };
 
 #endif //D_GEN_CODEGENVISITOR_H

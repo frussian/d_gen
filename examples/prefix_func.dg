@@ -1,5 +1,4 @@
 int[] prefix_func(string s) {
-	string test_str = "hey str"
 	int[] p = int[s.len]
 	int k = 0
 	int i

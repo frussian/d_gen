@@ -1,6 +1,22 @@
 # d_gen
 Test data generator
 
+## Semantics
+
+### Types
+`bool`, `int`, `string`, `arrays`, `char`
+
+## Tool
+The tool outputs test data using d_gen library as a json array of tests.
+
+Arguments:
+- -f<file_name> - path to algorithm file (required)
+- -n<num_tests> - number of tests (required)
+- -s<seed> (optional seed, otherwise unix time)
+
+Example:
+`d_gen_tool -fprefix_func.dg -n10 -s50`
+
 ## Build
 ### Build d_gen shared library
 ```
@@ -33,7 +49,3 @@ You can use the tool's CMake file as a template.
 #### ANTLR4
 - ANLTR4 jar executable v4.12.0 under /usr/local/lib
 - Runtime library is downloaded and built at the build time
-## Semantics
-
-### Types
-`bool`, `int`, `string`, `arrays`, `char`

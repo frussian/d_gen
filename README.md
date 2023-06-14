@@ -47,5 +47,5 @@ You can use the tool's CMake file as a template.
 [Install LLVM-13](https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0)
 
 #### ANTLR4
-- ANLTR4 jar executable v4.12.0 under /usr/local/lib
+- Download ANLTR4 jar executable v4.12.0 under /usr/local/lib
 - Runtime library is downloaded and built at the build time

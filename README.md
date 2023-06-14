@@ -15,7 +15,7 @@ Arguments:
 - -s<seed> (optional seed, otherwise unix time)
 
 Example:
-`d_gen_tool -fprefix_func.dg -n10 -s50`
+`./d_gen_tool -fprefix_func.dg -n10 -s50`
 
 ## Build
 ### Build d_gen shared library

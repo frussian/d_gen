@@ -1,5 +1,60 @@
 # d_gen
-Test data generator
+d_gen is the tool for generating a set of tests for an algorithm written in the specifically designed language.
+Basically, when interpreting a program every first access to an input variable triggers a newly generated
+value being bound to it. If the first access to a variable appears to be inside the condition of branch operator
+d_gen uses [Z3 SMT Solver](https://www.microsoft.com/en-us/research/project/z3-3/) to find the value that satisfies the condition. A user is given the option to choose
+the probability of executing the positive or the false branch.
+This approach that uses the execution of concrete and symbolic values is usually called [Concolic execution](https://en.wikipedia.org/wiki/Concolic_testing).
+
+## Motivation
+Not every algorithm can be tested properly using randomly generated values.
+For example, feeding the random string to the [prefix function](https://cp-algorithms.com/string/prefix-function.html) 
+algorithm always results in generating the array where almost every element is zero. That makes it unabling to test
+every branch of an algorithm.
+With d_gen you can choose what kind of output you want to see, whether it's the array with zero elements or 
+the diverse array that corresponds to the string with highly repetitive characters.
+
+As an example you may consider the output from two versions of the prefix function algorithm.
+
+[The good](examples/prefix_func.dg):
+```
+{
+  tests: [
+        {
+                s: "zzzzz",
+                prefix_func: [0,1,2,3,4]
+        },
+        {
+                s: "s",
+                prefix_func: [0]
+        },
+        {
+                s: "zzyzzy",
+                prefix_func: [0,1,0,1,2,3]
+        }
+  ]
+}
+```
+
+[The bad](examples/bad_prefix_func.dg) that emulates random generation with useless access to the input string:
+```
+{
+  tests: [
+        {
+                s: "",
+                prefix_func: []
+        },
+        {
+                s: "qnt",
+                prefix_func: [0,0,0]
+        },
+        {
+                s: "rhnkprqqu",
+                prefix_func: [0,0,0,0,0,1,0,0,0]
+        }
+  ]
+}
+```
 
 ## Semantics
 

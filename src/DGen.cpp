@@ -53,7 +53,7 @@ std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 		reset();
 	}
 
-	std::string json_res = "{\ttests: [\n";
+	std::string json_res = "{\n\t\"tests\": [\n";
 
 	for (int i = 0; i < tests.size(); i++) {
 		json_res += "\t" + tests[i];
@@ -63,7 +63,7 @@ std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 		json_res += "\n";
 	}
 
-	json_res += "}";
+	json_res += "\t]\n}";
 
 	return json_res;
 }
@@ -116,13 +116,13 @@ std::string gather_rec(void *res, Type type) {
 void DGen::gather_res(void *res) {
 	std::string test_data = "{\n";
 	for (const auto &in_sym: inputs) {
-		test_data += "\t\t" + in_sym->name + ": ";
+		test_data += "\t\t\"" + in_sym->name + "\": ";
 		test_data += in_sym->serialize();
 		test_data += ",\n";
 	}
 
 	auto res_str = gather_rec(res, func->ret_type);
-	test_data += "\t\t" + func->name + ": " + res_str;
+	test_data += "\t\t\"" + func->name + "\": " + res_str;
 	test_data += "\n\t}";
 
 	tests.push_back(std::move(test_data));

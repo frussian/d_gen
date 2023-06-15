@@ -1,7 +1,7 @@
 # d_gen
 d_gen is the tool for generating a set of tests for an algorithm written in the specifically designed language.
 Basically, when interpreting a program every first access to an input variable triggers a newly generated
-value being bound to it. If the first access to a variable appears to be inside the condition of branch operator
+value being bound to it. If the first access to a variable appears to be inside the condition of the branch operator
 d_gen uses [Z3 SMT Solver](https://www.microsoft.com/en-us/research/project/z3-3/) to find the value that satisfies the condition. A user is given the option to choose
 the probability of executing the positive or the false branch.
 This approach that uses the execution of concrete and symbolic values is usually called [Concolic execution](https://en.wikipedia.org/wiki/Concolic_testing).
@@ -9,12 +9,12 @@ This approach that uses the execution of concrete and symbolic values is usually
 ## Motivation
 Not every algorithm can be tested properly using randomly generated values.
 For example, feeding the random string to the [prefix function](https://cp-algorithms.com/string/prefix-function.html) 
-algorithm always results in generating the array where almost every element is zero. That makes it unabling to test
+algorithm always results in generating an array where almost every element is zero. That makes it unable to test
 every branch of an algorithm.
 With d_gen you can choose what kind of output you want to see, whether it's the array with zero elements or 
 the diverse array that corresponds to the string with highly repetitive characters.
 
-As an example you may consider the output from two versions of the prefix function algorithm.
+As an example, you may consider the output from two versions of the prefix function algorithm.
 
 [The good](examples/prefix_func.dg):
 ```
@@ -78,7 +78,7 @@ Example:
 cmake -B build
 cd build
 make -j4
-sudo make install #installs the so library and public headers to appropriate place
+sudo make install #installs the so library and public headers to the appropriate place
 ```
 ### Build d_gen tool
 ```
@@ -87,8 +87,8 @@ cmake -B build
 cd build
 make -j4
 ```
-### Build custom app
-To build custom app you need 
+### Build a custom app
+To build the custom app you need 
 - shared d_gen library installed (`so` and headers)
 - Z3 `v4.12.2.0` `so` file
 

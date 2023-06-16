@@ -56,10 +56,56 @@ As an example, you may consider the output from two versions of the prefix funct
 }
 ```
 
-## Semantics
+## Language
+### Overview
+Designed language is statically and (most of the times) strongly typed. It resembles a mix of C and Go.
 
-### Types
-`bool`, `int`, `string`, `arrays`, `char`
+Operators:
+- `if`
+- `for`
+- `while`
+- `continue`
+- `break`
+- `return`
+- `increment/decrement` `(++/--)`
+- `complex assignment` (like `+=`, `-=`, etc)
+- `comparison operators` (like `==`, `>`, etc)
+
+More information on grammar is listed in [ANLTR4 grammar file](d_gen.g4).
+
+The type system includes:
+- `int`
+- `char`
+- `bool`
+- `string`
+- `array` (including the nested ones)
+
+Implicit conversions are permitted only when assigning between the next types:
+`char <-> int` and `string <-> char[]`.
+For example, 
+```
+int i = 97
+char c = i + 2 // evaluates to 'c'
+
+string str = char[100] // allocatings string as an array of chars
+
+c = 'a' + 5  // triggers build error: different arguments types for sum operation
+```
+
+A program must contain one function that accepts at least one argument. Also, you can't assign to input variables.
+The condition expression in `if` and `loop` operators must evaluate to the value of `bool` type.
+
+You can find examples under the corresponding [directory](examples).
+
+### Generation
+By default, d_gen randomly generates input data. You're given the option to tune the generation. 
+Before every conditional operator (`if`, `while`, `for`) you can insert a special construction - `[prob = <optional probability>; <optional conditional expression>]`.
+
+The conditional expression is an additional constraint that you want to have on an input variable. 
+It's just the regular conditional expression that must evaluate to `bool`.
+
+Probability defines whether the condition in the corresponding operator evaluates to `true` or `false` most likely.
+Based on it, d_gen will generate appropriate values for input variables inside the condition expression.
 
 ## Tool
 The tool outputs test data using d_gen library as a json array of tests.

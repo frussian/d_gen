@@ -1,15 +1,12 @@
 bool smpl_asg(int i) {
 	string str =  "Hello, World!"
-	int[] arr = int[2]
-	arr[0] = 0
-	arr[1] = 1
-	if i >= 0 {
-		int i = 2
+	char c = str[3]
+	[prob = 50;]
+	if i == 0 {
+		int i = 97
 		i++
-		i = str[3]
-		i = i + 'b'
-		i = arr[1]
+		c = i
 	}
-	return str[2] == 'l'
+	return c == 'l'
 }
 

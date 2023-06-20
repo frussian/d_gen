@@ -15,6 +15,8 @@ int simple(int i, string str, string[] str_arr_arg) {
 	} else {
 		ret_val = 3
 	}
-	return ret_val
-	return str_arr[0][6] + 0
+	j = 97
+	char c = j + 2
+	j = c
+	return j
 }

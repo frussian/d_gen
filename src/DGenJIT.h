@@ -21,7 +21,7 @@
 #include <memory>
 
 class DGenJIT {
-public:
+private:
 	std::unique_ptr<llvm::orc::ExecutionSession> ES;
 
 	llvm::DataLayout DL;
@@ -34,54 +34,19 @@ public:
 
 public:
 	DGenJIT(std::unique_ptr<llvm::orc::ExecutionSession> ES,
-			llvm::orc::JITTargetMachineBuilder JTMB, llvm::DataLayout DL)
-			: ES(std::move(ES)), DL(std::move(DL)), Mangle(*this->ES, this->DL),
-			  ObjectLayer(*this->ES,
-						  []() { return std::make_unique<llvm::SectionMemoryManager>(); }),
-			  CompileLayer(*this->ES, ObjectLayer,
-						   std::make_unique<llvm::orc::ConcurrentIRCompiler>(std::move(JTMB))),
-			  MainJD(this->ES->createBareJITDylib("<main>")) {
-		MainJD.addGenerator(
-				cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
-						this->DL.getGlobalPrefix())));
-	}
+			llvm::orc::JITTargetMachineBuilder JTMB, llvm::DataLayout DL);
 
-	~DGenJIT() {
-		if (auto Err = ES->endSession())
-			ES->reportError(std::move(Err));
-	}
+	~DGenJIT();
 
-	static llvm::Expected<std::unique_ptr<DGenJIT>> Create() {
-		auto EPC = llvm::orc::SelfExecutorProcessControl::Create();
-		if (!EPC)
-			return EPC.takeError();
+	static llvm::Expected<std::unique_ptr<DGenJIT>> Create();
 
-		auto ES = std::make_unique<llvm::orc::ExecutionSession>(std::move(*EPC));
+	const llvm::DataLayout &getDataLayout() const;
 
-		llvm::orc::JITTargetMachineBuilder JTMB(
-				ES->getExecutorProcessControl().getTargetTriple());
+	llvm::orc::JITDylib &getMainJITDylib();
 
-		auto DL = JTMB.getDefaultDataLayoutForTarget();
-		if (!DL)
-			return DL.takeError();
+	llvm::Error addModule(llvm::orc::ThreadSafeModule TSM, llvm::orc::ResourceTrackerSP RT = nullptr);
 
-		return std::make_unique<DGenJIT>(std::move(ES), std::move(JTMB),
-										 std::move(*DL));
-	}
-
-	const llvm::DataLayout &getDataLayout() const { return DL; }
-
-	llvm::orc::JITDylib &getMainJITDylib() { return MainJD; }
-
-	llvm::Error addModule(llvm::orc::ThreadSafeModule TSM, llvm::orc::ResourceTrackerSP RT = nullptr) {
-		if (!RT)
-			RT = MainJD.getDefaultResourceTracker();
-		return CompileLayer.add(RT, std::move(TSM));
-	}
-
-	llvm::Expected<llvm::JITEvaluatedSymbol> lookup(llvm::StringRef Name) {
-		return ES->lookup({&MainJD}, Mangle(Name.str()));
-	}
+	llvm::Expected<llvm::JITEvaluatedSymbol> lookup(llvm::StringRef Name);
 };
 
 #endif //D_GEN_DGENJIT_H

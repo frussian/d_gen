@@ -53,6 +53,8 @@ std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 		reset();
 	}
 
+	delete func;
+
 	std::string json_res = "{\n\t\"tests\": [\n";
 
 	for (int i = 0; i < tests.size(); i++) {

@@ -12,10 +12,10 @@
 class SymbolTable {
 private:
 	std::unordered_map<std::string, std::shared_ptr<Symbol>> table;
-	SymbolTable *outer_table = nullptr;
+	std::shared_ptr<SymbolTable> outer_table = nullptr;
 public:
 	explicit SymbolTable() = default;
-	explicit SymbolTable(SymbolTable *outer_table);
+	explicit SymbolTable(std::shared_ptr<SymbolTable> outer_table);
 	void add_symbol(std::string name, std::shared_ptr<Symbol> symbol);
 	std::shared_ptr<Symbol> find_symbol(const std::string &name);
 };

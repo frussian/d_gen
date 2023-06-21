@@ -26,6 +26,8 @@ public:
 	explicit CodegenZ3Visitor(llvm::LLVMContext *ctx,
 							  llvm::Module *mod,
 							  llvm::IRBuilder<> *builder, CodegenVisitor *cg_visitor);
+	~CodegenZ3Visitor() = default;
+
 	llvm::Value *prepare_eval_ctx(ASTNode *cond, PrecondNode *pre_cond);
 	llvm::Value *prepare_eval_ctx(IdentNode *node);
 	llvm::Value *prepare_eval_ctx(PropertyLookupNode *node);
@@ -38,8 +40,6 @@ public:
 	z3::expr gen_expr(PropertyLookupNode *node);
 	z3::expr gen_expr(ArrLookupNode *node);
 	z3::expr gen_expr(BinOpNode *node);
-
-	//TODO: property lookup
 private:
 	llvm::LLVMContext *ctx;
 	llvm::Module *mod;

@@ -8,7 +8,6 @@
 #include "utils/assert.h"
 #include "BuildError.h"
 #include "CodegenVisitor.h"
-#include "CodegenZ3Visitor.h"
 
 #define OFFSET 4
 
@@ -48,6 +47,18 @@ llvm::Value *ASTNode::code_gen(CodegenVisitor *visitor) {
 
 z3::expr ASTNode::gen_expr(CodegenZ3Visitor *visitor) {
 	throw std::runtime_error("gen expr on wrong ast node");
+}
+
+ASTNode *ASTNode::copy() {
+	return this;
+}
+
+ASTNode::~ASTNode() {
+	for (auto child: children) {
+		if (child) {
+			delete child;
+		}
+	}
 }
 
 FunctionNode::FunctionNode(Position pos, Type ret_type, std::string name,
@@ -186,16 +197,16 @@ AsgNode *AsgNode::create(Position pos, ASTNode *lhs, const std::string &type, AS
 	auto t = map_asg_type(type);
 	switch (t) {
 		case AsgType::SUM:
-			rhs = new BinOpNode(pos, BinOpType::SUM, lhs, rhs);
+			rhs = new BinOpNode(pos, BinOpType::SUM, lhs->copy(), rhs);
 			break;
 		case AsgType::SUB:
-			rhs = new BinOpNode(pos, BinOpType::SUB, lhs, rhs);
+			rhs = new BinOpNode(pos, BinOpType::SUB, lhs->copy(), rhs);
 			break;
 		case AsgType::MUL:
-			rhs = new BinOpNode(pos, BinOpType::MUL, lhs, rhs);
+			rhs = new BinOpNode(pos, BinOpType::MUL, lhs->copy(), rhs);
 			break;
 		case AsgType::DIV:
-			rhs = new BinOpNode(pos, BinOpType::DIV, lhs, rhs);
+			rhs = new BinOpNode(pos, BinOpType::DIV, lhs->copy(), rhs);
 			break;
 		default: break;
 	}
@@ -226,10 +237,10 @@ AsgNode *CremNode::create(Position pos, ASTNode *lhs, const std::string &type) {
 	BinOpNode *rhs = nullptr;
 	switch (map_crem_type(type)) {
 		case CremType::INC:
-			rhs = new BinOpNode(pos, BinOpType::SUM, lhs, new NumberNode(pos, 1));
+			rhs = new BinOpNode(pos, BinOpType::SUM, lhs->copy(), new NumberNode(pos, 1));
 			break;
 		case CremType::DEC:
-			rhs = new BinOpNode(pos, BinOpType::SUB, lhs, new NumberNode(pos, 1));
+			rhs = new BinOpNode(pos, BinOpType::SUB, lhs->copy(), new NumberNode(pos, 1));
 			break;
 	}
 	return new AsgNode(pos, lhs, rhs);
@@ -297,6 +308,10 @@ z3::expr NumberNode::gen_expr(CodegenZ3Visitor *visitor) {
 	return visitor->gen_expr(this);
 }
 
+ASTNode *NumberNode::copy() {
+	return new NumberNode(pos, num);
+}
+
 BoolNode::BoolNode(Position pos, bool val): ASTNode(pos), val(val) {}
 
 BoolNode *BoolNode::create(Position pos, antlr4::tree::TerminalNode *token) {
@@ -332,6 +347,10 @@ llvm::Value *IdentNode::code_gen(CodegenVisitor *visitor) {
 
 z3::expr IdentNode::gen_expr(CodegenZ3Visitor *visitor) {
 	return visitor->gen_expr(this);
+}
+
+ASTNode *IdentNode::copy() {
+	return new IdentNode(pos, name);
 }
 
 BinOpNode::BinOpNode(Position pos, BinOpType op_type, ASTNode *lhs, ASTNode *rhs):
@@ -495,6 +514,10 @@ z3::expr BinOpNode::gen_expr(CodegenZ3Visitor *visitor) {
 	return visitor->gen_expr(this);
 }
 
+ASTNode *BinOpNode::copy() {
+	return new BinOpNode(pos, op_type, lhs->copy(), rhs->copy());
+}
+
 ArrLookupNode::ArrLookupNode(Position pos, std::string ident_name, std::vector<ASTNode*> idxs):
 		ASTNode(pos), idxs(std::move(idxs)) {
 	ident = new IdentNode(pos, std::move(ident_name));
@@ -530,6 +553,15 @@ llvm::Value *ArrLookupNode::code_gen(CodegenVisitor *visitor) {
 
 z3::expr ArrLookupNode::gen_expr(CodegenZ3Visitor *visitor) {
 	return visitor->gen_expr(this);
+}
+
+ASTNode *ArrLookupNode::copy() {
+	std::vector<ASTNode*> c_idxs;
+	c_idxs.reserve(idxs.size());
+	for (auto idx: idxs) {
+		c_idxs.push_back(idx->copy());
+	}
+	return new ArrLookupNode(pos, ident->name, c_idxs);
 }
 
 ArrCreateNode::ArrCreateNode(Position pos, Type type, ASTNode *len):
@@ -572,6 +604,10 @@ llvm::Value *PropertyLookupNode::code_gen(CodegenVisitor *visitor) {
 
 z3::expr PropertyLookupNode::gen_expr(CodegenZ3Visitor *visitor) {
 	return visitor->gen_expr(this);
+}
+
+ASTNode *PropertyLookupNode::copy() {
+	return new PropertyLookupNode(pos, ident->name, property_name);
 }
 
 PrecondNode::PrecondNode(Position pos, int prob, ASTNode *expr):

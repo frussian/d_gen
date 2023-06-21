@@ -33,13 +33,14 @@ public:
 	Position pos;
 
 	explicit ASTNode(Position pos, std::vector<ASTNode*> children = std::vector<ASTNode*>());;
-	virtual ~ASTNode() = default;
+	virtual ~ASTNode();
 	void print_spaces(std::ostream &out, int offset);
 	void visitChildren(ASTTraverser cb, std::any ctx);
 	virtual void print(std::ostream &out, int offset);
 	virtual z3::expr gen_expr(CodegenZ3Visitor *visitor);
 	virtual llvm::Value *code_gen(CodegenVisitor *visitor);
 	virtual Type get_type();
+	virtual ASTNode *copy();
 };
 
 class DefNode;
@@ -217,6 +218,8 @@ public:
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 
 	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
+
+	ASTNode *copy() override;
 };
 
 class BoolNode: public ASTNode {
@@ -242,6 +245,8 @@ public:
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 
 	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
+
+	ASTNode *copy() override;
 };
 
 enum class BinOpType {
@@ -279,6 +284,8 @@ public:
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 
 	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
+
+	ASTNode *copy() override;
 private:
 	static BinOpType map_op_type(const std::string& op_type);
 	static BinOpGroup get_op_group_args(BinOpType type);
@@ -306,6 +313,8 @@ public:
 	llvm::Value *code_gen(CodegenVisitor *visitor) override;
 
 	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
+
+	ASTNode *copy() override;
 };
 
 class ArrCreateNode: public ASTNode {
@@ -331,6 +340,8 @@ public:
 	llvm::Value * code_gen(CodegenVisitor *visitor) override;
 
 	z3::expr gen_expr(CodegenZ3Visitor *visitor) override;
+
+	ASTNode *copy() override;
 };
 
 

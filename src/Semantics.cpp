@@ -62,7 +62,7 @@ void Semantics::connect_loops_visit_body(BodyNode *body, ForNode *loop) {
 }
 
 std::vector<std::shared_ptr<Symbol>> Semantics::type_ast() {
-	auto *s_table = new SymbolTable;
+	auto s_table = std::make_shared<SymbolTable>();
 	std::vector<std::shared_ptr<Symbol>> inputs;
 	for (const auto &arg: func->args) {
 		auto in_sym = Symbol::create_symbol(arg->pos, arg->type, arg->name, true);
@@ -76,14 +76,12 @@ std::vector<std::shared_ptr<Symbol>> Semantics::type_ast() {
 }
 
 bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
-	auto s_table = std::any_cast<SymbolTable*>(ctx);
+	auto s_table = std::any_cast<std::shared_ptr<SymbolTable>>(ctx);
 
 	if (auto def = dynamic_cast<DefNode*>(node)) {
-		auto new_table = new SymbolTable(s_table);
 		auto sym = Symbol::create_symbol(def->pos, def->type, def->name);
 		def->sym = sym;
-		new_table->add_symbol(def->name, sym);
-		ctx = new_table;
+		s_table->add_symbol(def->name, sym);
 	} else if (auto ident = dynamic_cast<IdentNode*>(node)) {
 		auto symbol = s_table->find_symbol(ident->name);
 		if (!symbol) {
@@ -91,6 +89,9 @@ bool Semantics::type_visitor(ASTNode *node, std::any &ctx) {
 		}
 
 		ident->symbol = symbol;
+	} else if (auto body = dynamic_cast<BodyNode*>(node)) {
+		body->visitChildren(&type_visitor, std::make_shared<SymbolTable>(s_table));
+		return false;
 	}
 
 	return true;

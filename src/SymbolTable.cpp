@@ -4,7 +4,7 @@
 
 #include "SymbolTable.h"
 
-SymbolTable::SymbolTable(SymbolTable *outer_table): outer_table(outer_table) {}
+SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> outer_table): outer_table(outer_table) {}
 
 void SymbolTable::add_symbol(std::string name, std::shared_ptr<Symbol> symbol) {
 	table[name] = symbol;

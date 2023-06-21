@@ -26,6 +26,7 @@ class CodegenZ3Visitor;
 class CodegenVisitor {
 public:
 	explicit CodegenVisitor(DGen *d_gen);
+	~CodegenVisitor() = default;
 	llvm::Value *code_gen(FunctionNode *func);
 	llvm::Value *code_gen(BodyNode *body);
 	llvm::Value *code_gen(BoolNode *node);

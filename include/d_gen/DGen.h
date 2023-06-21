@@ -19,6 +19,7 @@ extern "C" void gather_res(CodegenVisitor *visitor, void *res);
 class DGen {
 public:
 	explicit DGen(std::istream &input);
+	~DGen() = default;
 
 	//TODO: add args: seed, number of tests, coverage
 	std::string generate_json(int tests_num, std::optional<int> seed = std::optional<int>());

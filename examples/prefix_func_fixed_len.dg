@@ -1,7 +1,7 @@
 int[] prefix_func(string s) {
-    [s.len == 5]
-    if true {
-    }
+	[s.len == 5]
+	if true {
+	}
 
 	int[] p = int[s.len]
 	int k = 0

@@ -21,7 +21,6 @@ DGen::DGen(std::istream &input): input(input) {}
 std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 	auto builder = std::make_unique<ASTBuilderVisitor>(input);
 	func = builder->parse();
-//	func->print(std::cout, 0);
 	Semantics sem(func);
 	sem.connect_loops();
 	inputs = sem.type_ast();
@@ -38,7 +37,7 @@ std::string DGen::generate_json(int tests_num, std::optional<int> seed) {
 	visitor.code_gen(func);
 
 	auto mod = visitor.get_module();
-	mod.getModuleUnlocked()->print(llvm::errs(), nullptr);
+//	mod.getModuleUnlocked()->print(llvm::errs(), nullptr);
 
 	auto J = cantFail(DGenJIT::Create());
 	cantFail(J->addModule(std::move(mod)));

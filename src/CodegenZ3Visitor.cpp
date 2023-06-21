@@ -154,7 +154,7 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	if (pre_cond->prob != -1) {
 		auto r = std::abs(std::rand() % 100);
 		if (r > pre_cond->prob) {
-			std::cout << "decided to negate, recv " << r << " prob" << std::endl;
+//			std::cout << "decided to negate, recv " << r << " prob" << std::endl;
 			cond_expr = !cond_expr;
 		}
 	} else {
@@ -169,12 +169,12 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	}
 
 	if (exprs.empty()) {
-		std::cout << "exprs empty => skipping z3 gen" << std::endl;
+//		std::cout << "exprs empty => skipping z3 gen" << std::endl;
 		return;
 	}
 
-	std::cout << "err: " << solver.check_error() << std::endl;
-	std::cout << "solver " << solver << std::endl;
+//	std::cout << "err: " << solver.check_error() << std::endl;
+//	std::cout << "solver " << solver << std::endl;
 
 	auto res = solver.check();
 
@@ -183,15 +183,15 @@ void CodegenZ3Visitor::start_z3_gen(ASTNode *cond, PrecondNode *pre_cond) {
 	// now it's causing a symbol to generate a value although it's not needed
 	// (and z3 fails with unsat)
 	if (res != z3::sat) {
-		std::cout << "couldn't check satisfiability " << res << std::endl;
+//		std::cout << "couldn't check satisfiability " << res << std::endl;
 		return;
 	}
 
-	std::cout << "satisfiability checked successfully" << std::endl;
+//	std::cout << "satisfiability checked successfully" << std::endl;
 
 	auto model = solver.get_model();
 
-	std::cout << "model " << model.to_string() << std::endl;
+//	std::cout << "model " << model.to_string() << std::endl;
 
 	for (const auto &item: syms_to_expr_id) {
 		auto sym = item.first;

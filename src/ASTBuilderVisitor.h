@@ -15,14 +15,11 @@
 class ASTBuilderVisitor: public d_genBaseVisitor {
 public:
 	explicit ASTBuilderVisitor(std::istream &input);
+	~ASTBuilderVisitor() override = default;
 	FunctionNode *parse();
 private:
 	std::istream &input;
 	static Position getStartPos(antlr4::ParserRuleContext *ctx);
-
-//	std::any defaultResult() override {
-//		return new ASTNode(Position(0, 0));
-//	}
 
 	//default for nonterminals with 1 nonterminal on the right side
 	std::any visitChildren(antlr4::tree::ParseTree *node) override;
@@ -51,30 +48,9 @@ private:
 
 	std::any visitPrecondition(d_genParser::PreconditionContext *ctx) override;
 
-//	std::any visitStatement(d_genParser::StatementContext *ctx) override {
-//		if (auto asg = ctx->assignment()) {
-//			std::cout << "asg " << asg->IDENT()->getText() << " " << asg->ASSG_TYPE() << std::endl;
-//		} else if (auto ret = ctx->return_()) {
-//			std::cout << ret->logic_expr() << std::endl;
-//		}
-//		return visitChildren(ctx);
-//	}
-
 	std::any visitLogic_expr(d_genParser::Logic_exprContext *ctx) override;
 
 	std::any visitLogic_t(d_genParser::Logic_tContext *ctx) override;
-
-	//TODO: check if this is needed (visitChildren not working)
-//	std::any visitLogic_inner_expr(d_genParser::Logic_inner_exprContext *ctx) override {
-//		std::cout << "visit logic inner expr" << std::endl;
-//		for (auto c: ctx->children) {
-//			auto str = c->getText();
-//			std::replace(str.begin(), str.end(), '\r', ' ');
-//			std::cout << "t: " << str << ", ";
-//		}
-//		auto expr = std::any_cast<ASTNode*>(visitLogic_expr(ctx->logic_expr()));
-//		return expr;
-//	}
 
 	std::any visitCmp_op(d_genParser::Cmp_opContext *ctx) override;
 

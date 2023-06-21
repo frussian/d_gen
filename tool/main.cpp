@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
 
 		std::cout << "generated tests:\n";
 		std::cout << json << std::endl;
+		stream.close();
 	} catch (const BuildError &err) {
 		std::cout << "errors" << std::endl;
 		for (const auto &e: err.errors) {

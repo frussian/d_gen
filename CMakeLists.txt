@@ -26,7 +26,7 @@ set(public_headers
 		include/d_gen/Position.h)
 
 set(sources
-		src/z3_test.cpp src/ast.h
+		src/ast.h
 		src/ast.cpp src/utils/assert.h src/type.h
 		src/type.cpp src/ASTBuilderVisitor.cpp src/ASTBuilderVisitor.h
 		src/BuildError.cpp src/Semantics.cpp

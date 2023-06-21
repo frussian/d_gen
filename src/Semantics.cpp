@@ -104,7 +104,6 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 	auto func = std::any_cast<FunctionNode*>(ctx);
 	if (auto pre_cond = dynamic_cast<PrecondNode*>(node)) {
 		type_check_precondition(pre_cond);
-		return false;
 	} else if (auto ret = dynamic_cast<ReturnNode*>(node)) {
 		auto t = ret->expr->get_type();
 		if (t != func->ret_type) {
@@ -112,7 +111,6 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 				func->ret_type.to_string() + ", got " +
 				t.to_string()});
 		}
-		return false;
 	} else if (auto asg = dynamic_cast<AsgNode*>(node)) {
 		if (auto ident = dynamic_cast<IdentNode*>(asg->lhs)) {
 			if (ident->symbol->is_input) {
@@ -124,7 +122,6 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 			}
 		}
 		type_check_asg(asg);
-		return false;
 	} else if (auto def = dynamic_cast<DefNode*>(node)) {
 		if (!def->rhs) {
 			return false;
@@ -136,40 +133,26 @@ bool Semantics::type_check_visitor(ASTNode *node, std::any &ctx) {
 										   def->type.to_string() + " and " +
 										   t.to_string()});
 		}
-		return false;
 	} else if (auto loop = dynamic_cast<ForNode*>(node)) {
-		if (loop->precond) {
-			type_check_precondition(loop->precond);
-		}
-		if (loop->pre_asg) {
-			type_check_asg(loop->pre_asg);
-		}
-		if (loop->inc_asg) {
-			type_check_asg(loop->inc_asg);
-		}
 		auto cond_t = loop->cond->get_type();
 		if (cond_t != TypeKind::BOOL) {
 			throw BuildError(Err{loop->pos,
 								 "loop stop condition must be evaluated to bool, got " +
 								 cond_t.to_string()});
 		}
-		loop->body->visitChildren(&type_check_visitor, func);
-		return false;
 	} else if (auto if_node = dynamic_cast<IfNode*>(node)) {
-		if (if_node->precond) {
-			type_check_precondition(if_node->precond);
-		}
 		auto cond_t = if_node->cond->get_type();
 		if (cond_t != TypeKind::BOOL) {
 			throw BuildError(Err{if_node->pos,
 								 "if operator condition must be evaluated to bool, got " +
 								 cond_t.to_string()});
 		}
-		if_node->body->visitChildren(&type_check_visitor, func);
-		if (if_node->else_body) {
-			if_node->else_body->visitChildren(&type_check_visitor, func);
+	} else if (auto arr_lookup = dynamic_cast<ArrLookupNode*>(node)) {
+		for (auto idx: arr_lookup->idxs) {
+			if (idx->get_type() != TypeKind::INT) {
+				throw BuildError(Err{idx->pos, "index should have int type"});
+			}
 		}
-		return false;
 	}
 
 	return true;

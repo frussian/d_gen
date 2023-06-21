@@ -358,7 +358,9 @@ z3::expr CharSym::get_expr(z3::context &ctx) {
 }
 
 void CharSym::fill_val(z3::expr &expr) {
-	ch = expr.get_numeral_int();
+	//TODO: workaround to generate symbols inside 0:255
+	//should be in additional condition in solver?
+	ch = expr.get_numeral_int64() % 256;
 }
 
 void CharSym::reset_val() {

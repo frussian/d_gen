@@ -19,18 +19,18 @@ As an example, you may consider the output from two versions of the prefix funct
 [The good](examples/prefix_func.dg):
 ```
 {
-  tests: [
+  "tests": [
         {
-                s: "zzzzz",
-                prefix_func: [0,1,2,3,4]
+                "s": "zzzzz",
+                "prefix_func": [0,1,2,3,4]
         },
         {
-                s: "s",
-                prefix_func: [0]
+                "s": "s",
+                "prefix_func": [0]
         },
         {
-                s: "zzyzzy",
-                prefix_func: [0,1,0,1,2,3]
+                "s": "zzyzzy",
+                "prefix_func": [0,1,0,1,2,3]
         }
   ]
 }
@@ -39,18 +39,18 @@ As an example, you may consider the output from two versions of the prefix funct
 [The bad](examples/bad_prefix_func.dg) that emulates random generation with useless access to the input string:
 ```
 {
-  tests: [
+  "tests": [
         {
-                s: "",
-                prefix_func: []
+                "s": "",
+                "prefix_func": []
         },
         {
-                s: "qnt",
-                prefix_func: [0,0,0]
+                "s": "qnt",
+                "prefix_func": [0,0,0]
         },
         {
-                s: "rhnkprqqu",
-                prefix_func: [0,0,0,0,0,1,0,0,0]
+                "s": "rhnkprqqu",
+                "prefix_func": [0,0,0,0,0,1,0,0,0]
         }
   ]
 }
